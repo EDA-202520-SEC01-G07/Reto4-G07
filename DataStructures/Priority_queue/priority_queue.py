@@ -60,7 +60,7 @@ def swim(heap, pos):
         hijo = al.get_element(heap["elements"], int(pos))
 
         x = priority(heap, padre, hijo) #Si true entonces Padre tiene mayor prioridad que el hijo, False el hijo tiene mayor prioridad
-        if x:#Si mi padre tiene mayor prioridad, no subo
+        if not x:#Si mi padre tiene mayor prioridad, no subo
             exchange(heap, pos, int(pos//2))
             pos = pos//2
         else:
