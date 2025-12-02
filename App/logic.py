@@ -1,6 +1,7 @@
 import time
 import datetime as dt
 import csv
+import haversine as h
 csv.field_size_limit(2147483647)
 from DataStructures.Graph import digraph as d
 from DataStructures.Map import map_separate_chaining as m
@@ -20,8 +21,8 @@ def new_logic():
         "grafo_hidrico": None
     }
     catalog["eventos"] = pq.new_heap(True)
-    catalog["vértices"] = m.new_map(1000, 7)
-    catalog["eventos_y_nodos"] = m.new_map(22600, 7)
+    catalog["vértices"] = m.new_map(300, 7) #300 porque en el ejemplo salieron menos de 250 en small
+    #catalog["eventos_y_nodos"] = m.new_map(22600, 7) 
     catalog["grafo_desplazamiento"] = d.new_graph(1000)
     catalog["grafo_hidrico"] = d.new_graph(1000)
     return catalog
@@ -34,20 +35,61 @@ def load_data(catalog, filename):
     """
     # TODO: Realizar la carga de datos
     start = get_time()
-    lista = catalog["eventos"]
+    # 1. Carga de todos los eventos
+    cola_prioridad = catalog["eventos"]
     input_file = csv.DictReader(open(filename, encoding= 'utf-8'))
     for evento in input_file:
         e = {"id": evento["event-id"],
-            "latitud": evento["location-lat"],
-            "longitud": evento["location-long"],
+            "latitud": float(evento["location-lat"]),
+            "longitud": float(evento["location-long"]),
             "timestamp": evento["timestamp"],
-            "comments": evento["comments"],
-            "tag-local-identifier": evento["tag-local-identifier"]}
-        pq.insert(lista, dt.datetime.strptime(e["timestamp"],"%Y-%m-%d %H:%M:%S.%f"), e)
-    catalog["eventos"] =lista
+            "comments": float(evento["comments"])*0.001, #está en m, pasar a km
+            "tag-local-identifier": int(evento["tag-local-identifier"])}
+        pq.insert(cola_prioridad, dt.datetime.strptime(e["timestamp"],"%Y-%m-%d %H:%M:%S.%f"), e)
+    catalog["eventos"] =cola_prioridad
+    
+    # 2. Construcción vértices
+    """
+    Se guardan vertices totales en el mapa "véritces" del catalogo
+    Cada vértice tiene:
+    1. Id del evento
+    2. (Latitud, Longitud)
+    3. Timestamp
+    4. Eventos de grullas (MAPA donde está la info de las grullas)
+    5. Promedio de agua: en forma tupla (promedio, suma, totales) donde la suma y totales son para actualizar el prom
+    La información del 1 al 3 las da la primera grulla
+    4 y 5 se van actualizando con cada grulla
+    """
+    nodos = catalog["vértices"] #Es un mapa
+    grulla_0 = pq.remove(cola_prioridad) #Me da la primera grulla
+    if m.is_empty(nodos): #Guardar info de al menos un evento para empezar a comparar
+        mapa=m.new_map(5,7)
+        m.put(mapa, "event_id", grulla_0["id"])
+        m.put(mapa, "location", (grulla_0["latitud"], grulla_0["longitud"])) #Tupla (Lat, Long)
+        m.put(mapa, "tiempo", grulla_0["timestamp"])
+        m_grullas = m.new_map(200, 7)
+        m.put(m_grullas, "id_grulla", grulla_0["tag-local-identifier"])
+        m.put(mapa, "map_eventos", m_grullas)
+        promedio = (grulla_0["comments"], grulla_0["comments"], 1)
+        m.put(mapa, "prom_agua", promedio)
+        m.put(nodos, grulla_0["id"], mapa) #Mete en el mapa de vértices el primero. La llave es el id del evento
+        
+    grulla = pq.remove(cola_prioridad)
+    while not pq.is_empty(cola_prioridad):
+        for i in m.key_set(nodos)["elements"]:
+            nodo = m.get(nodos, i)
+            distancia = h.haversine((grulla["latitud"], grulla["longitud"]), (nodo["location"]))
+            t1 = dt.datetime.strptime(grulla["tiempo"],"%Y-%m-%d %H:%M:%S.%f")
+            t2 = dt.datetime.strptime(nodo["timestamp"],"%Y-%m-%d %H:%M:%S.%f")
+            diferencia = abs(t1-t2)
+            horas = diferencia.total_seconds() / 3600
+            if distancia < 3 and horas < 3:
+            
+    
+    
     end = get_time()
     tiempo = delta_time(start, end)
-    return tiempo
+    return tiempo, grulla
 
 # Funciones de consulta sobre el catálogo
 
