@@ -15,12 +15,14 @@ def new_logic():
     #TODO: Llama a las funciónes de creación de las estructuras de datos
     catalog = {
         "eventos": None,
-        "vértices": None,
+        "event_vertices": None, 
+        "vertices": None,
         "grafo_desplazamiento": None,
         "grafo_hidrico": None
     }
     catalog["eventos"] = pq.new_heap(True)
-    catalog["vértices"] = m.new_map(300, 7) #300 porque en el ejemplo salieron menos de 250 en small
+    catalog["event_vertices"] = pq.new_heap(True)
+    catalog["vertices"] = m.new_map(300, 7) #300 porque en el ejemplo salieron menos de 250 en small
     catalog["grafo_desplazamiento"] = d.new_graph(1000)
     catalog["grafo_hidrico"] = d.new_graph(1000)
     return catalog
@@ -35,7 +37,6 @@ def load_data(catalog, filename):
     start = get_time()
     grullas_ident = []
     # 1. Carga de todos los eventos
-    cola_prioridad = catalog["eventos"]
     input_file = csv.DictReader(open(filename, encoding= 'utf-8'))
     for evento in input_file:
         e = {"id": evento["event-id"],
@@ -45,21 +46,21 @@ def load_data(catalog, filename):
             "time_dt": dt.datetime.strptime(evento["timestamp"], "%Y-%m-%d %H:%M:%S.%f"),
             "comments": float(evento["comments"])*0.001, #está en m, pasar a km
             "tag-local-identifier": int(evento["tag-local-identifier"])}
-        pq.insert(cola_prioridad, e["time_dt"],e)
+        pq.insert(catalog["event_vertices"], e["time_dt"],e)
+        pq.insert(catalog["eventos"], e["time_dt"],e)
         if e["tag-local-identifier"] not in grullas_ident:
             grullas_ident.append(e["tag-local-identifier"])
-    catalog["eventos"] =cola_prioridad
-    eventos_totales = pq.size(cola_prioridad)
+            
     # 2. Construcción vértices
     llaves = []
-    nodos = catalog["vértices"] #Es un mapa
-    grulla_0 = pq.remove(cola_prioridad) #Me da la primera grulla
+    nodos = catalog["vertices"] #Es un mapa
+    grulla_0 = pq.remove(catalog["event_vertices"]) #Me da la primera grulla
     primer_vert = nuevo_vertice(grulla_0)
     m.put(nodos, grulla_0["id"], primer_vert) #Mete en el mapa de vértices el primero. La llave es el id del evento
     llaves.append(grulla_0["id"])
     
-    while not pq.is_empty(cola_prioridad):
-        grulla = pq.remove(cola_prioridad)
+    while not pq.is_empty(catalog["event_vertices"]):
+        grulla = pq.remove(catalog["event_vertices"])
         agregado = False
         for key in llaves:
             nodo = m.get(nodos, key)
@@ -83,7 +84,7 @@ def load_data(catalog, filename):
             
     end = get_time()
     tiempo = delta_time(start, end)
-    return tiempo, grullas_ident, eventos_totales
+    return tiempo, grullas_ident, llaves
                 
 def nuevo_vertice(grulla_0):
     """
@@ -117,7 +118,33 @@ def nuevo_vertice(grulla_0):
     promedio = [grulla_0["comments"], grulla_0["comments"]] #Lista con [promedio, suma] el promedio se hace con el conteo
     mapa["prom_agua"] = promedio
     return mapa
-    
+
+def presentacion_datos(catalog, llaves):
+    vertices = catalog["vertices"]
+    primeros = []
+    ultimos = []
+    for i in range(5):
+        elem = m.get(vertices, llaves[i])
+        lat = elem["location"][0]
+        long = elem["location"][1]
+        datos = {"Identificador único": elem["event_id"],
+                "Posición (lat, lon)": (round(lat, 5), round(long, 5)),
+                "Fecha de creación": elem["timestamp"],
+                "Grullas (Tags)": [elem["grullas"]["elements"][0]],
+                "Conteo de eventos": elem["conteo"]}
+        primeros.append(datos)
+            
+    for j in range(m.size(vertices)-5,m.size(vertices)):
+        elem = m.get(vertices, llaves[j])
+        lat = elem["location"][0]
+        long = elem["location"][1]
+        datos = {"Identificador único": elem["event_id"],
+                "Posición (lat, lon)": (round(lat, 5), round(long, 5)),
+                "Fecha de creación": elem["timestamp"],
+                "Grullas (Tags)": [elem["grullas"]["elements"][0]],
+                "Conteo de eventos": elem["conteo"]}
+        ultimos.append(datos)
+    return primeros, ultimos
 
 # Funciones de consulta sobre el catálogo
 
