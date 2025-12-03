@@ -2,8 +2,6 @@ import sys
 import tabulate as tb
 from App import logic as lg
 from DataStructures.Map import map_separate_chaining as m
-from DataStructures.Priority_queue import priority_queue as pq
-from DataStructures.List import array_list as al
 def new_logic():
     """
         Se crea una instancia del controlador

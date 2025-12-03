@@ -81,7 +81,38 @@ def load_data(catalog, filename):
             vertice = nuevo_vertice(grulla) #Se crea un nuevo vértice si no está a 3 Km o en el rango de 3 horas
             m.put(nodos, grulla["id"], vertice)
             llaves.append(grulla["id"])
-            
+    # 3. CREAR ARCOS DE DESPLAZAMIENTO
+    grafo_desplazamiento = catalog["grafo_desplazamiento"]
+    for grulla_id in grullas_ident:
+        eventos_grulla = []
+        for key in llaves:
+            nodo = m.get(nodos, key)
+            if m.contains(nodo["map_eventos"], grulla_id):
+                evento = m.get(nodo["map_eventos"], grulla_id)
+                al.add_last(eventos_grulla, evento)
+        #Ahora se tienen todos los eventos de la grulla en orden de tiempo
+        for i in range(1, al.size(eventos_grulla)):
+            evento_0 = al.get_element(eventos_grulla, i-1)
+            evento_1 = al.get_element(eventos_grulla, i)
+            distancia = h.haversine((evento_0["latitud"], evento_0["longitud"]),
+                                    (evento_1["latitud"], evento_1["longitud"]))
+            diferencia = abs(evento_1["time_dt"]-evento_0["time_dt"])
+            horas = diferencia.total_seconds()/3600
+            if horas > 0:
+                velocidad = distancia/horas
+                d.add_edge(grafo_desplazamiento, evento_0["id"], evento_1["id"], velocidad)
+    catalog["grafo_desplazamiento"] = grafo_desplazamiento
+    # 4. CREAR ARCOS HÍDRICOS
+    grafo_hidrico = catalog["grafo_hidrico"]
+    for i in range(len(llaves)):
+        nodo_i = m.get(nodos, llaves[i])
+        for j in range(i+1, len(llaves)):
+            nodo_j = m.get(nodos, llaves[j])
+            distancia = h.haversine(nodo_i["location"], nodo_j["location"])
+            if distancia <= 10:
+                d.add_edge(grafo_hidrico, nodo_i["event_id"], nodo_j["event_id"], distancia)
+                d.add_edge(grafo_hidrico, nodo_j["event_id"], nodo_i["event_id"], distancia)
+    catalog["grafo_hidrico"] = grafo_hidrico
     end = get_time()
     tiempo = delta_time(start, end)
     return tiempo, grullas_ident, llaves
