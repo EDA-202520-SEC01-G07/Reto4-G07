@@ -42,9 +42,10 @@ def load_data(catalog, filename):
             "latitud": float(evento["location-lat"]),
             "longitud": float(evento["location-long"]),
             "timestamp": evento["timestamp"],
+            "time_dt": dt.datetime.strptime(evento["timestamp"], "%Y-%m-%d %H:%M:%S.%f"),
             "comments": float(evento["comments"])*0.001, #está en m, pasar a km
             "tag-local-identifier": int(evento["tag-local-identifier"])}
-        pq.insert(cola_prioridad, dt.datetime.strptime(e["timestamp"],"%Y-%m-%d %H:%M:%S.%f"), e)
+        pq.insert(cola_prioridad, e["time_dt"],e)
     catalog["eventos"] =cola_prioridad
 
     # 2. Construcción vértices
@@ -61,9 +62,7 @@ def load_data(catalog, filename):
         nodo = m.get(nodos, ultimo)
         
         distancia = h.haversine((grulla["latitud"], grulla["longitud"]), nodo["location"])
-        t1 = dt.datetime.strptime(grulla["timestamp"],"%Y-%m-%d %H:%M:%S.%f")
-        t2 = dt.datetime.strptime(nodo["tiempo"],"%Y-%m-%d %H:%M:%S.%f")
-        diferencia = abs(t1-t2)
+        diferencia = abs(grulla["time_dt"]-nodo["time_dt"])
         horas = diferencia.total_seconds()/3600
         if distancia < 3 and horas < 3:
             #meter la nueva grulla en el vértice
@@ -99,7 +98,8 @@ def nuevo_vertice(grulla_0):
     mapa={}
     mapa["event_id"] = grulla_0["id"]
     mapa["location"]= (grulla_0["latitud"], grulla_0["longitud"]) #Tupla (Lat, Long)
-    mapa["tiempo"] = grulla_0["timestamp"]
+    mapa["timestamp"] = grulla_0["timestamp"]
+    mapa["time_dt"] = grulla_0["time_dt"]
     l = al.new_list()
     al.add_last(l, grulla_0["tag-local-identifier"])
     mapa["grullas"] = l
