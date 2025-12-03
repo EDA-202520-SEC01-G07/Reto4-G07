@@ -55,24 +55,27 @@ def load_data(catalog, filename):
     primer_vert = nuevo_vertice(grulla_0)
     m.put(nodos, grulla_0["id"], primer_vert) #Mete en el mapa de vértices el primero. La llave es el id del evento
     llaves.append(grulla_0["id"])
-        
+    
+    agreg = True
     while not pq.is_empty(cola_prioridad):
         grulla = pq.remove(cola_prioridad)
-        ultimo = llaves[-1]
-        nodo = m.get(nodos, ultimo)
-        
-        distancia = h.haversine((grulla["latitud"], grulla["longitud"]), nodo["location"])
-        diferencia = abs(grulla["time_dt"]-nodo["time_dt"])
-        horas = diferencia.total_seconds()/3600
-        if distancia < 3 and horas < 3:
-            #meter la nueva grulla en el vértice
-            al.add_last(nodo["grullas"], grulla["tag-local-identifier"])
-            m.put(nodo["map_eventos"], grulla["tag-local-identifier"], grulla)
-            nodo["conteo"] = nodo["conteo"]+1
-            prom = nodo["prom_agua"]
-            prom[1] += grulla["comments"]
-            prom[0] = prom[1]/nodo["conteo"]
-        else:
+        agregado = False
+        for key in llaves:
+            nodo = m.get(nodos, key)
+            distancia = h.haversine((grulla["latitud"], grulla["longitud"]), nodo["location"])
+            diferencia = abs(grulla["time_dt"]-nodo["time_dt"])
+            horas = diferencia.total_seconds()/3600
+            if distancia < 3 and horas < 3:
+                #meter la nueva grulla en el vértice
+                al.add_last(nodo["grullas"], grulla["tag-local-identifier"])
+                m.put(nodo["map_eventos"], grulla["tag-local-identifier"], grulla)
+                nodo["conteo"] = nodo["conteo"]+1
+                prom = nodo["prom_agua"]
+                prom[1] += grulla["comments"]
+                prom[0] = prom[1]/nodo["conteo"]
+                agregado = True
+                break
+        if not agregado:
             vertice = nuevo_vertice(grulla) #Se crea un nuevo vértice si no está a 3 Km o en el rango de 3 horas
             m.put(nodos, grulla["id"], vertice)
             llaves.append(grulla["id"])
