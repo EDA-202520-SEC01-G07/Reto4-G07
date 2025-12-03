@@ -46,20 +46,20 @@ def load_data(catalog, filename):
             "tag-local-identifier": int(evento["tag-local-identifier"])}
         pq.insert(cola_prioridad, dt.datetime.strptime(e["timestamp"],"%Y-%m-%d %H:%M:%S.%f"), e)
     catalog["eventos"] =cola_prioridad
-    
+
     # 2. Construcción vértices
     llaves = []
     nodos = catalog["vértices"] #Es un mapa
     grulla_0 = pq.remove(cola_prioridad) #Me da la primera grulla
-    if m.is_empty(nodos): #Guardar info de al menos un evento para empezar a comparar
-        mapa = nuevo_vertice(grulla_0)
-        m.put(nodos, grulla_0["id"], mapa) #Mete en el mapa de vértices el primero. La llave es el id del evento
-        llaves.append(grulla_0["id"])
+    primer_vert = nuevo_vertice(grulla_0)
+    m.put(nodos, grulla_0["id"], primer_vert) #Mete en el mapa de vértices el primero. La llave es el id del evento
+    llaves.append(grulla_0["id"])
         
-    grulla = pq.remove(cola_prioridad)
     while not pq.is_empty(cola_prioridad):
+        grulla = pq.remove(cola_prioridad)
         ultimo = llaves[-1]
         nodo = m.get(nodos, ultimo)
+        
         distancia = h.haversine((grulla["latitud"], grulla["longitud"]), nodo["location"])
         t1 = dt.datetime.strptime(grulla["timestamp"],"%Y-%m-%d %H:%M:%S.%f")
         t2 = dt.datetime.strptime(nodo["tiempo"],"%Y-%m-%d %H:%M:%S.%f")
@@ -67,19 +67,17 @@ def load_data(catalog, filename):
         horas = diferencia.total_seconds()/3600
         if distancia < 3 and horas < 3:
             #meter la nueva grulla en el vértice
-            nodo["grullas"] = al.add_last(nodo["grullas"], grulla["tag-local-identifier"])
-            nodo["map_eventos"] = m.put(nodo["map_eventos"], grulla["tag-local-identifier"], grulla)
+            al.add_last(nodo["grullas"], grulla["tag-local-identifier"])
+            m.put(nodo["map_eventos"], grulla["tag-local-identifier"], grulla)
             nodo["conteo"] = nodo["conteo"]+1
-            tupla_prom = nodo["prom_agua"]
-            tupla_prom[1] = tupla_prom[1]+grulla["comments"]
-            tupla_prom[0] = tupla_prom[1]/nodo["conteo"]
-            nodo["prom_agua"] = tupla_prom
-            continue
+            prom = nodo["prom_agua"]
+            prom[1] += grulla["comments"]
+            prom[0] = prom[1]/nodo["conteo"]
         else:
             vertice = nuevo_vertice(grulla) #Se crea un nuevo vértice si no está a 3 Km o en el rango de 3 horas
             m.put(nodos, grulla["id"], vertice)
             llaves.append(grulla["id"])
-        grulla = pq.remove(cola_prioridad)
+            
     end = get_time()
     tiempo = delta_time(start, end)
     return tiempo
