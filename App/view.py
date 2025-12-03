@@ -1,6 +1,8 @@
 import sys
 from App import logic as lg
 from DataStructures.Map import map_separate_chaining as m
+from DataStructures.Priority_queue import priority_queue as pq
+from DataStructures.List import array_list as al
 def new_logic():
     """
         Se crea una instancia del controlador
@@ -27,9 +29,16 @@ def load_data(control):
     control = new_logic()
     file = input('Diga el archivo que quiere evaluar (small, large, 30pct, 80pct)\n').strip().lower()
     file = "data/1000_cranes_mongolia_"+file+".csv"
-    tiempo = lg.load_data(control, file)
-    print(tiempo)
-    print(m.size(control["vértices"]))
+    tiempo, g_ident, eventos_totales = lg.load_data(control, file)
+    print("==================")
+    print("CARGA DE DATOS")
+    print("Tiempo de carga:" + str(round(tiempo,3)))
+    print("==================")
+    print("Total de grullas reconocidas: "+str(len(g_ident)))
+    print("Total de eventos cargados: "+str(eventos_totales))
+    print("Total de nodos del grafo: "+str(m.size(control["vértices"])))
+    print("Total de arcos en el grafo: ")
+    print("==================")
 
 
 def print_data(control, id):
