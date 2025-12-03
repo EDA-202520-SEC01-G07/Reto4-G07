@@ -55,8 +55,7 @@ def load_data(catalog, filename):
     primer_vert = nuevo_vertice(grulla_0)
     m.put(nodos, grulla_0["id"], primer_vert) #Mete en el mapa de vértices el primero. La llave es el id del evento
     llaves.append(grulla_0["id"])
-    
-    agreg = True
+
     while not pq.is_empty(cola_prioridad):
         grulla = pq.remove(cola_prioridad)
         agregado = False
