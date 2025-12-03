@@ -2,6 +2,8 @@ import sys
 import tabulate as tb
 from App import logic as lg
 from DataStructures.Map import map_separate_chaining as m
+from DataStructures.Priority_queue import priority_queue as pq
+from DataStructures.Graph import digraph as d
 def new_logic():
     """
         Se crea una instancia del controlador
@@ -36,7 +38,7 @@ def load_data(control):
     print("Total de grullas reconocidas: "+str(len(g_ident)))
     print("Total de eventos cargados: "+str(pq.size(control["eventos"])))
     print("Total de nodos del grafo: "+str(m.size(control["vertices"])))
-    print("Total de arcos en el grafo: ")
+    print("Total de arcos en el grafo: " + str(d.size(control["grafo_hidrico"])))
     print("================== \n")
     primeros, ultimos = lg.presentacion_datos(control, llaves)
     print("--- Primeros 5 nodos ---")

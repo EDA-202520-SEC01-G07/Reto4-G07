@@ -4,6 +4,7 @@ import csv
 import haversine as h
 csv.field_size_limit(2147483647)
 from DataStructures.Graph import digraph as d
+from DataStructures.Graph import dfs as dfs
 from DataStructures.Map import map_separate_chaining as m
 from DataStructures.Priority_queue import priority_queue as pq
 from DataStructures.List import array_list as al
@@ -115,23 +116,20 @@ def load_data(catalog, filename):
     grafo_hidrico = catalog["grafo_hidrico"]
     for i in range(len(llaves)):
         nodo_i = m.get(nodos, llaves[i])
-        if nodo_i is None:
-            continue
-        for j in range(i+1, len(llaves)):
+        for j in range(i + 1, len(llaves)):
             nodo_j = m.get(nodos, llaves[j])
-            if nodo_j is None:
-                continue
             distancia = h.haversine(nodo_i["location"], nodo_j["location"])
-            if distancia <= 10:
-                # insertar vértices si no existen
+            diferencia = abs(nodo_j["time_dt"] - nodo_i["time_dt"])
+            horas = diferencia.total_seconds() / 3600
+            if distancia <= 10 and horas <= 48:
+                # Crear vértices si no existen
                 if not d.contains_vertex(grafo_hidrico, nodo_i["event_id"]):
                     d.insert_vertex(grafo_hidrico, nodo_i["event_id"], None)
                 if not d.contains_vertex(grafo_hidrico, nodo_j["event_id"]):
                     d.insert_vertex(grafo_hidrico, nodo_j["event_id"], None)
-                d.add_edge(grafo_hidrico, nodo_i["event_id"], nodo_j["event_id"], distancia)
-                d.add_edge(grafo_hidrico, nodo_j["event_id"], nodo_i["event_id"], distancia)
-    catalog["grafo_hidrico"] = grafo_hidrico
-
+                # Agregar arco con peso 1 (puede ser cualquier valor ya que solo interesa la conexión)
+                d.add_edge(grafo_hidrico, nodo_i["event_id"], nodo_j["event_id"], 1)
+                d.add_edge(grafo_hidrico, nodo_j["event_id"], nodo_i["event_id"], 1)
     end = get_time()
     tiempo = delta_time(start, end)
     return tiempo, grullas_ident, llaves
@@ -199,11 +197,10 @@ def presentacion_datos(catalog, llaves):
 # Funciones de consulta sobre el catálogo
 
 
-def req_1(catalog):
+def req_1(catalog, id_grulla, tiempo_inicio, tiempo_final):
     """
     Retorna el resultado del requerimiento 1
     """
-    # TODO: Modificar el requerimiento 1
     pass
 
 
