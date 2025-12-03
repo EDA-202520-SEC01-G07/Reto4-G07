@@ -1,6 +1,6 @@
 import sys
 from App import logic as lg
-
+from DataStructures.Map import map_separate_chaining as m
 def new_logic():
     """
         Se crea una instancia del controlador
@@ -24,10 +24,12 @@ def load_data(control):
     Carga los datos
     """
     #TODO: Realizar la carga de datos
+    control = new_logic()
     file = input('Diga el archivo que quiere evaluar (small, large, 30pct, 80pct)\n').strip().lower()
     file = "data/1000_cranes_mongolia_"+file+".csv"
     tiempo = lg.load_data(control, file)
-    
+    print(tiempo)
+    print(m.size(control["vértices"]))
 
 
 def print_data(control, id):

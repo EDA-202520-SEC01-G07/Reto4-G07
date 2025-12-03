@@ -22,7 +22,6 @@ def new_logic():
     }
     catalog["eventos"] = pq.new_heap(True)
     catalog["vértices"] = m.new_map(300, 7) #300 porque en el ejemplo salieron menos de 250 en small
-    #catalog["eventos_y_nodos"] = m.new_map(22600, 7) 
     catalog["grafo_desplazamiento"] = d.new_graph(1000)
     catalog["grafo_hidrico"] = d.new_graph(1000)
     return catalog
@@ -49,47 +48,74 @@ def load_data(catalog, filename):
     catalog["eventos"] =cola_prioridad
     
     # 2. Construcción vértices
+    llaves = []
+    nodos = catalog["vértices"] #Es un mapa
+    grulla_0 = pq.remove(cola_prioridad) #Me da la primera grulla
+    if m.is_empty(nodos): #Guardar info de al menos un evento para empezar a comparar
+        mapa = nuevo_vertice(grulla_0)
+        m.put(nodos, grulla_0["id"], mapa) #Mete en el mapa de vértices el primero. La llave es el id del evento
+        llaves.append(grulla_0["id"])
+        
+    grulla = pq.remove(cola_prioridad)
+    while not pq.is_empty(cola_prioridad):
+        ultimo = llaves[-1]
+        nodo = m.get(nodos, ultimo)
+        distancia = h.haversine((grulla["latitud"], grulla["longitud"]), nodo["location"])
+        t1 = dt.datetime.strptime(grulla["timestamp"],"%Y-%m-%d %H:%M:%S.%f")
+        t2 = dt.datetime.strptime(nodo["tiempo"],"%Y-%m-%d %H:%M:%S.%f")
+        diferencia = abs(t1-t2)
+        horas = diferencia.total_seconds()/3600
+        if distancia < 3 and horas < 3:
+            #meter la nueva grulla en el vértice
+            nodo["grullas"] = al.add_last(nodo["grullas"], grulla["tag-local-identifier"])
+            nodo["map_eventos"] = m.put(nodo["map_eventos"], grulla["tag-local-identifier"], grulla)
+            nodo["conteo"] = nodo["conteo"]+1
+            tupla_prom = nodo["prom_agua"]
+            tupla_prom[1] = tupla_prom[1]+grulla["comments"]
+            tupla_prom[0] = tupla_prom[1]/nodo["conteo"]
+            nodo["prom_agua"] = tupla_prom
+            continue
+        else:
+            vertice = nuevo_vertice(grulla) #Se crea un nuevo vértice si no está a 3 Km o en el rango de 3 horas
+            m.put(nodos, grulla["id"], vertice)
+            llaves.append(grulla["id"])
+        grulla = pq.remove(cola_prioridad)
+    end = get_time()
+    tiempo = delta_time(start, end)
+    return tiempo
+                
+def nuevo_vertice(grulla_0):
     """
     Se guardan vertices totales en el mapa "véritces" del catalogo
     Cada vértice tiene:
     1. Id del evento
     2. (Latitud, Longitud)
     3. Timestamp
-    4. Eventos de grullas (MAPA donde está la info de las grullas)
-    5. Promedio de agua: en forma tupla (promedio, suma, totales) donde la suma y totales son para actualizar el prom
+    4. Id de grullas
+    5. Eventos de grullas (MAPA donde está la info de las grullas)
+    6. Conteo de grullas
+    7. Promedio de agua: en forma tupla (promedio, suma, totales) donde la suma y totales son para actualizar el prom
     La información del 1 al 3 las da la primera grulla
-    4 y 5 se van actualizando con cada grulla
+    4, 5, 6 y 7 se van actualizando con cada grulla
     """
-    nodos = catalog["vértices"] #Es un mapa
-    grulla_0 = pq.remove(cola_prioridad) #Me da la primera grulla
-    if m.is_empty(nodos): #Guardar info de al menos un evento para empezar a comparar
-        mapa=m.new_map(5,7)
-        m.put(mapa, "event_id", grulla_0["id"])
-        m.put(mapa, "location", (grulla_0["latitud"], grulla_0["longitud"])) #Tupla (Lat, Long)
-        m.put(mapa, "tiempo", grulla_0["timestamp"])
-        m_grullas = m.new_map(200, 7)
-        m.put(m_grullas, "id_grulla", grulla_0["tag-local-identifier"])
-        m.put(mapa, "map_eventos", m_grullas)
-        promedio = (grulla_0["comments"], grulla_0["comments"], 1)
-        m.put(mapa, "prom_agua", promedio)
-        m.put(nodos, grulla_0["id"], mapa) #Mete en el mapa de vértices el primero. La llave es el id del evento
-        
-    grulla = pq.remove(cola_prioridad)
-    while not pq.is_empty(cola_prioridad):
-        for i in m.key_set(nodos)["elements"]:
-            nodo = m.get(nodos, i)
-            distancia = h.haversine((grulla["latitud"], grulla["longitud"]), (nodo["location"]))
-            t1 = dt.datetime.strptime(grulla["tiempo"],"%Y-%m-%d %H:%M:%S.%f")
-            t2 = dt.datetime.strptime(nodo["timestamp"],"%Y-%m-%d %H:%M:%S.%f")
-            diferencia = abs(t1-t2)
-            horas = diferencia.total_seconds() / 3600
-            if distancia < 3 and horas < 3:
-            
+    mapa={}
+    mapa["event_id"] = grulla_0["id"]
+    mapa["location"]= (grulla_0["latitud"], grulla_0["longitud"]) #Tupla (Lat, Long)
+    mapa["tiempo"] = grulla_0["timestamp"]
+    l = al.new_list()
+    al.add_last(l, grulla_0["tag-local-identifier"])
+    mapa["grullas"] = l
     
+    m_grullas = m.new_map(200, 7)
+    m.put(m_grullas, grulla_0["tag-local-identifier"], grulla_0)
+    mapa["map_eventos"]= m_grullas
     
-    end = get_time()
-    tiempo = delta_time(start, end)
-    return tiempo, grulla
+    mapa["conteo"] = 1
+    
+    promedio = [grulla_0["comments"], grulla_0["comments"]] #Lista con [promedio, suma] el promedio se hace con el conteo
+    mapa["prom_agua"] = promedio
+    return mapa
+    
 
 # Funciones de consulta sobre el catálogo
 
