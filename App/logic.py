@@ -81,6 +81,7 @@ def load_data(catalog, filename):
             vertice = nuevo_vertice(grulla) #Se crea un nuevo vértice si no está a 3 Km o en el rango de 3 horas
             m.put(nodos, grulla["id"], vertice)
             llaves.append(grulla["id"])
+            
     # 3. CREAR ARCOS DE DESPLAZAMIENTO
     grafo_desplazamiento = catalog["grafo_desplazamiento"]
     for grulla_id in grullas_ident:
@@ -102,6 +103,7 @@ def load_data(catalog, filename):
                 velocidad = distancia/horas
                 d.add_edge(grafo_desplazamiento, evento_0["id"], evento_1["id"], velocidad)
     catalog["grafo_desplazamiento"] = grafo_desplazamiento
+    
     # 4. CREAR ARCOS HÍDRICOS
     grafo_hidrico = catalog["grafo_hidrico"]
     for i in range(len(llaves)):
