@@ -16,7 +16,6 @@ def new_logic():
     catalog = {
         "eventos": None,
         "vértices": None,
-        "eventos_y_nodos": None,
         "grafo_desplazamiento": None,
         "grafo_hidrico": None
     }
@@ -34,6 +33,7 @@ def load_data(catalog, filename):
     """
     # TODO: Realizar la carga de datos
     start = get_time()
+    grullas_ident = []
     # 1. Carga de todos los eventos
     cola_prioridad = catalog["eventos"]
     input_file = csv.DictReader(open(filename, encoding= 'utf-8'))
@@ -46,8 +46,10 @@ def load_data(catalog, filename):
             "comments": float(evento["comments"])*0.001, #está en m, pasar a km
             "tag-local-identifier": int(evento["tag-local-identifier"])}
         pq.insert(cola_prioridad, e["time_dt"],e)
+        if e["tag-local-identifier"] not in grullas_ident:
+            grullas_ident.append(e["tag-local-identifier"])
     catalog["eventos"] =cola_prioridad
-
+    eventos_totales = pq.size(cola_prioridad)
     # 2. Construcción vértices
     llaves = []
     nodos = catalog["vértices"] #Es un mapa
@@ -81,7 +83,7 @@ def load_data(catalog, filename):
             
     end = get_time()
     tiempo = delta_time(start, end)
-    return tiempo
+    return tiempo, grullas_ident, eventos_totales
                 
 def nuevo_vertice(grulla_0):
     """
