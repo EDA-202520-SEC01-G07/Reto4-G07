@@ -85,36 +85,53 @@ def load_data(catalog, filename):
     # 3. CREAR ARCOS DE DESPLAZAMIENTO
     grafo_desplazamiento = catalog["grafo_desplazamiento"]
     for grulla_id in grullas_ident:
-        eventos_grulla = []
+        eventos_grulla = al.new_list()
+        # Recolectar los eventos en orden temporal
         for key in llaves:
             nodo = m.get(nodos, key)
             if m.contains(nodo["map_eventos"], grulla_id):
                 evento = m.get(nodo["map_eventos"], grulla_id)
                 al.add_last(eventos_grulla, evento)
-        #Ahora se tienen todos los eventos de la grulla en orden de tiempo
-        for i in range(1, al.size(eventos_grulla)):
-            evento_0 = al.get_element(eventos_grulla, i-1)
-            evento_1 = al.get_element(eventos_grulla, i)
-            distancia = h.haversine((evento_0["latitud"], evento_0["longitud"]),
-                                    (evento_1["latitud"], evento_1["longitud"]))
-            diferencia = abs(evento_1["time_dt"]-evento_0["time_dt"])
-            horas = diferencia.total_seconds()/3600
-            if horas > 0:
-                velocidad = distancia/horas
-                d.add_edge(grafo_desplazamiento, evento_0["id"], evento_1["id"], velocidad)
+        tam = al.size(eventos_grulla)
+        # Debe haber al menos dos eventos para crear un arco
+        if tam >= 2:
+            for i in range(0, tam - 1):
+                evento_0 = al.get_element(eventos_grulla, i)
+                evento_1 = al.get_element(eventos_grulla, i + 1)
+                distancia = h.haversine((evento_0["latitud"], evento_0["longitud"]),(evento_1["latitud"], evento_1["longitud"]))
+                diferencia = abs(evento_1["time_dt"] - evento_0["time_dt"])
+                horas = diferencia.total_seconds() / 3600
+                if horas > 0:
+                    velocidad = distancia / horas
+                    # Crear vértices si no existen
+                    if not d.contains_vertex(grafo_desplazamiento, evento_0["id"]):
+                        d.insert_vertex(grafo_desplazamiento, evento_0["id"], None)
+                    if not d.contains_vertex(grafo_desplazamiento, evento_1["id"]):
+                        d.insert_vertex(grafo_desplazamiento, evento_1["id"], None)
+                    # Agregar arco
+                    d.add_edge(grafo_desplazamiento, evento_0["id"], evento_1["id"], velocidad)
     catalog["grafo_desplazamiento"] = grafo_desplazamiento
-    
-    # 4. CREAR ARCOS HÍDRICOS
+    # 4. CREAR ARCOS DE PROXIMIDAD HÍDRICA
     grafo_hidrico = catalog["grafo_hidrico"]
     for i in range(len(llaves)):
         nodo_i = m.get(nodos, llaves[i])
+        if nodo_i is None:
+            continue
         for j in range(i+1, len(llaves)):
             nodo_j = m.get(nodos, llaves[j])
+            if nodo_j is None:
+                continue
             distancia = h.haversine(nodo_i["location"], nodo_j["location"])
             if distancia <= 10:
+                # insertar vértices si no existen
+                if not d.contains_vertex(grafo_hidrico, nodo_i["event_id"]):
+                    d.insert_vertex(grafo_hidrico, nodo_i["event_id"], None)
+                if not d.contains_vertex(grafo_hidrico, nodo_j["event_id"]):
+                    d.insert_vertex(grafo_hidrico, nodo_j["event_id"], None)
                 d.add_edge(grafo_hidrico, nodo_i["event_id"], nodo_j["event_id"], distancia)
                 d.add_edge(grafo_hidrico, nodo_j["event_id"], nodo_i["event_id"], distancia)
     catalog["grafo_hidrico"] = grafo_hidrico
+
     end = get_time()
     tiempo = delta_time(start, end)
     return tiempo, grullas_ident, llaves
