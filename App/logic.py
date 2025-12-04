@@ -232,17 +232,16 @@ def presentacion_datos(catalog, llaves):
 # Funciones de consulta sobre el catálogo
 
 def req_1(catalog, lat_o, lon_o, lat_d, lon_d, grulla_id):
-    nodos = catalog["vertices"]
-    grafo = catalog["grafo_desplazamiento"]
+    grafo = catalog["grafo_migraciones"]
+    llaves = d.vertices(grafo)
 
     # 1. Encontrar nodo origen más cercano
-    llaves = m.key_set(nodos)
     nodo_origen = None
     min_dist_origen = float("inf")
 
     for i in range(1, al.size(llaves) + 1):
         key = al.get_element(llaves, i)
-        nodo = m.get(nodos, key)
+        nodo = d.get_vertex_information(grafo, key)
         dist = h.haversine((lat_o, lon_o), nodo["location"])
 
         if dist < min_dist_origen:
@@ -255,7 +254,7 @@ def req_1(catalog, lat_o, lon_o, lat_d, lon_d, grulla_id):
 
     for i in range(1, al.size(llaves) + 1):
         key = al.get_element(llaves, i)
-        nodo = m.get(nodos, key)
+        nodo = d.get_vertex_information(grafo, key)
         dist = h.haversine((lat_d, lon_d), nodo["location"])
 
         if dist < min_dist_destino:
@@ -286,7 +285,7 @@ def req_1(catalog, lat_o, lon_o, lat_d, lon_d, grulla_id):
 
     for i in range(len(path_ids)):
         id_nodo = path_ids[i]
-        nodo = m.get(nodos, id_nodo)
+        nodo = d.get_vertex_information(grafo, id_nodo)
 
         lista_grullas = nodo["grullas"]
         n = al.size(lista_grullas)
@@ -354,19 +353,15 @@ def req_4(catalog):
 
 
 
-def req_5(catalog, lat_o, lon_o, lat_d, lon_d, grafo_tipo="desplazamiento"):
-    """
-    Req 5 usando el Dijkstra propio del proyecto.
-    Sin set(), sin try/except, sin .get()
-    """
+def req_5(catalog, lat_o, lon_o, lat_d, lon_d, grafo_tipo="migraciones"):
 
-    nodos = catalog["vertices"]
+    nodos = catalog["grafo_migraciones"]
 
     # escoger grafo correcto
     if grafo_tipo == "hidrico":
         grafo = catalog["grafo_hidrico"]
     else:
-        grafo = catalog["grafo_desplazamiento"]
+        grafo = catalog["grafo_migraciones"]
 
     llaves = m.key_set(nodos)
     if llaves is None or al.size(llaves) == 0:
