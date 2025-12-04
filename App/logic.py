@@ -10,6 +10,7 @@ from DataStructures.Priority_queue import priority_queue as pq
 from DataStructures.List import array_list as al
 from DataStructures.Graph import dijkstra as djk
 from DataStructures.Stack import stack as s
+from DataStructures.Queue import queue as q
 from DataStructures.Graph import bfs as bfs
 from DataStructures.Graph import dfo_structure as dfo
 from DataStructures.Graph import prim_structure as pr
