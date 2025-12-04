@@ -19,16 +19,12 @@ def new_logic():
     #TODO: Llama a las funciónes de creación de las estructuras de datos
     catalog = {
         "eventos": None,
-        "event_vertices": None, 
-        "vertices": None,
         "grafo_desplazamiento": None,
         "grafo_hidrico": None
     }
-    catalog["eventos"] = pq.new_heap(True)
-    catalog["event_vertices"] = pq.new_heap(True)
-    catalog["vertices"] = m.new_map(300, 7) #300 porque en el ejemplo salieron menos de 250 en small
-    catalog["grafo_desplazamiento"] = d.new_graph(1000)
-    catalog["grafo_hidrico"] = d.new_graph(1000)
+    catalog["eventos"] = al.new_list()
+    catalog["grafo_desplazamiento"] = d.new_graph(7000)
+    catalog["grafo_hidrico"] = d.new_graph(7000)
     return catalog
 
 # Funciones para la carga de datos
@@ -39,8 +35,8 @@ def load_data(catalog, filename):
     """
     # TODO: Realizar la carga de datos
     start = get_time()
-    grullas_ident = []
-    # 1. Carga de todos los eventos
+    grullas_ident = {}
+    # 1. Carga de todos los eventos y organizarlos
     input_file = csv.DictReader(open(filename, encoding= 'utf-8'))
     for evento in input_file:
         e = {"id": evento["event-id"],
@@ -50,24 +46,26 @@ def load_data(catalog, filename):
             "time_dt": dt.datetime.strptime(evento["timestamp"], "%Y-%m-%d %H:%M:%S.%f"),
             "comments": float(evento["comments"])*0.001, #está en m, pasar a km
             "tag-local-identifier": int(evento["tag-local-identifier"])}
-        pq.insert(catalog["event_vertices"], e["time_dt"],e)
-        pq.insert(catalog["eventos"], e["time_dt"],e)
+        al.add_last(catalog["eventos"], e)
         if e["tag-local-identifier"] not in grullas_ident:
-            grullas_ident.append(e["tag-local-identifier"])
-            
-    # 2. Construcción vértices
-    llaves = []
-    nodos = catalog["vertices"] #Es un mapa
-    grulla_0 = pq.remove(catalog["event_vertices"]) #Me da la primera grulla
-    primer_vert = nuevo_vertice(grulla_0)
-    m.put(nodos, grulla_0["id"], primer_vert) #Mete en el mapa de vértices el primero. La llave es el id del evento
-    llaves.append(grulla_0["id"])
+            grullas_ident[e["tag-local-identifier"]]=[]
+    al.merge_sort(catalog["eventos"], al.sort_crit_reto4)
     
-    while not pq.is_empty(catalog["event_vertices"]):
-        grulla = pq.remove(catalog["event_vertices"])
+    # 2. Construcción vértices
+    g_des = catalog["grafo_desplazamiento"]
+    g_hid = catalog["grafo_hidrico"]
+    llaves = []
+    grulla_0 = al.first_element(catalog["eventos"]) #Me da la primera grulla
+    primer_vert = nuevo_vertice(grulla_0)
+    llaves.append(grulla_0["id"])
+    d.insert_vertex(g_des, grulla_0["id"], primer_vert)
+    d.insert_vertex(g_hid, grulla_0["id"], primer_vert)
+    
+    for i in range(1, al.size(catalog["eventos"])):
+        grulla = al.get_element(catalog["eventos"], i)
         agregado = False
         for key in llaves:
-            nodo = m.get(nodos, key)
+            nodo = d.get_vertex_information(g_des, key)
             distancia = h.haversine((grulla["latitud"], grulla["longitud"]), nodo["location"])
             diferencia = abs(grulla["time_dt"]-nodo["time_dt"])
             horas = diferencia.total_seconds()/3600
@@ -79,36 +77,44 @@ def load_data(catalog, filename):
                 prom = nodo["prom_agua"]
                 prom[1] += grulla["comments"]
                 prom[0] = prom[1]/nodo["conteo"]
+                grullas_ident[grulla["tag-local-identifier"]].append(key)
                 agregado = True
                 break
         if not agregado:
             vertice = nuevo_vertice(grulla) #Se crea un nuevo vértice si no está a 3 Km o en el rango de 3 horas
-            m.put(nodos, grulla["id"], vertice)
+            d.insert_vertex(g_des, grulla["id"], vertice)
+            d.insert_vertex(g_hid, grulla["id"], vertice)
             llaves.append(grulla["id"])
-            
+            grullas_ident[grulla["tag-local-identifier"]].append(grulla["id"])
+    
+    """"
     # 3. CREAR ARCOS DE DESPLAZAMIENTO
-    grafo_desplazamiento = catalog["grafo_desplazamiento"]
+    migracion = catalog["grafo_desplazamiento"]
+    vertices = catalog["vertices"]
+    arcos = {}
     for grulla_id in grullas_ident:
-        eventos_grulla = al.new_list()
-        # Recolectar los eventos en orden temporal
-        for key in llaves:
-            nodo = m.get(nodos, key)
-            if m.contains(nodo["map_eventos"], grulla_id):
-                evento = m.get(nodo["map_eventos"], grulla_id)
-                al.add_last(eventos_grulla, evento)
-        tam = al.size(eventos_grulla)
-        # Debe haber al menos dos eventos para crear un arco
-        if tam >= 2:
-            for i in range(0, tam - 1):
-                evento_0 = al.get_element(eventos_grulla, i)
-                evento_1 = al.get_element(eventos_grulla, i + 1)
-                distancia = h.haversine((evento_0["latitud"], evento_0["longitud"]),(evento_1["latitud"], evento_1["longitud"]))
-                diferencia = abs(evento_1["time_dt"] - evento_0["time_dt"])
+        ruta = grullas_ident[grulla_id] # lista con los nodos en orden temporal
+        # Debe haber al menos dos nodos para crear un arco
+        if len(ruta) >= 2:
+            #¿Qué hago acá?
+            for i in range(1, len(ruta)):
+                vert_A = m.get(vertices, ruta[i-1])
+                vert_B = m.get(vertices, ruta[i])
+                if vert_A == vert_B:
+                    continue
+                distancia = h.haversine((m.get(vert_A,"latitud"),m.get(vert_A,"longitud")),(m.get(vert_B,"latitud"),m.get(vert_B,"longitud")))
+                diferencia = abs(m.get(vert_B, "time_dt") - m.get(vert_A, "time_dt"))
                 horas = diferencia.total_seconds() / 3600
-                if horas > 0:
-                    velocidad = distancia / horas
-                    # Crear vértices si no existen
-                    if not d.contains_vertex(grafo_desplazamiento, evento_0["id"]):
+                if arcos[(vert_A["event_id"], vert_B["event_id"])] not in arcos:
+                    arcos[vert_A["event_id"], vert_B["event_id"]] = [distancia, 1]
+                else:
+                    arcos[vert_A["event_id"], vert_B["event_id"]] = [arcos[vert_A["event_id"], vert_B["event_id"]][0]+diferencia, arcos[vert_A["event_id"], vert_B["event_id"]][0]+1]
+    for i in arcos:
+        A = arcos[i][0]
+        print(A)
+
+        prom= round(arcos[i][0]/arcos[i][1],2)
+        if not d.contains_vertex(migracion, evento_0["id"]):
                         d.insert_vertex(grafo_desplazamiento, evento_0["id"], None)
                     if not d.contains_vertex(grafo_desplazamiento, evento_1["id"]):
                         d.insert_vertex(grafo_desplazamiento, evento_1["id"], None)
@@ -148,11 +154,19 @@ def load_data(catalog, filename):
                 d.insert_vertex(grafo_hidrico, nodo_j["event_id"], None)
             # 6. REVISAR SI YA EXISTE ARCO (super eficiente)
             adj_i = d.get_vertex(grafo_hidrico, nodo_i["event_id"])["adjacents"]
+<<<<<<< HEAD
             if not m.contains(adj_i, nodo_j["event_id"]):
                 # 7. Agregar arco con peso redondeado
                 d.add_edge(grafo_hidrico, nodo_i["event_id"], nodo_j["event_id"], round(distancia, 2))
             
 
+=======
+            #if m.contains(adj_i, nodo_j["event_id"]):
+               # continue
+            # 7. Agregar arco con peso redondeado
+            d.add_edge(grafo_hidrico, nodo_i["event_id"], nodo_j["event_id"], round(distancia, 2))
+    """
+>>>>>>> a2191655aeb43a13e181d354daf4554c416828bc
     end = get_time()
     tiempo = delta_time(start, end)
     return tiempo, grullas_ident, llaves
@@ -191,11 +205,11 @@ def nuevo_vertice(grulla_0):
     return mapa
 
 def presentacion_datos(catalog, llaves):
-    vertices = catalog["vertices"]
+    vertices = catalog["grafo_desplazamiento"]
     primeros = []
     ultimos = []
     for i in range(5):
-        elem = m.get(vertices, llaves[i])
+        elem = d.get_vertex_information(vertices, llaves[i])
         lat = elem["location"][0]
         long = elem["location"][1]
         datos = {"Identificador único": elem["event_id"],
@@ -205,8 +219,8 @@ def presentacion_datos(catalog, llaves):
                 "Conteo de eventos": elem["conteo"]}
         primeros.append(datos)
             
-    for j in range(m.size(vertices)-5,m.size(vertices)):
-        elem = m.get(vertices, llaves[j])
+    for j in range(d.order(vertices)-5,d.order(vertices)):
+        elem = d.get_vertex_information(vertices, llaves[j])
         lat = elem["location"][0]
         long = elem["location"][1]
         datos = {"Identificador único": elem["event_id"],

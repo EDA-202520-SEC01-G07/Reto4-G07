@@ -107,6 +107,12 @@ def default_sort_criteria(element_1, element_2):
     if element_1 < element_2:
         is_sorted = True
     return is_sorted
+
+def sort_crit_reto4(element_1, element_2):
+    is_sorted = False
+    if element_1["time_dt"] < element_2["time_dt"]:
+        is_sorted = True
+    return is_sorted
 sort_crit = default_sort_criteria
 
 def insertion_sort(my_list, sort_crit):
