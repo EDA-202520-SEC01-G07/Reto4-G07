@@ -106,7 +106,12 @@ def print_req_2(control):
         Función que imprime la solución del Requerimiento 2 en consola
     """
     # TODO: Imprimir el resultado del requerimiento 2
-    pass
+    lat_o = float(input("Latitud del punto de origen: "))
+    lon_o = float(input("Longitud del punto de origen: "))
+    lat_d = float(input("Latitud del punto de destino: "))
+    lon_d = float(input("Longitud del punto de destino: "))
+    radio = float(input("Indique el área de interés (Km): "))
+    
 
 
 def print_req_3(control):

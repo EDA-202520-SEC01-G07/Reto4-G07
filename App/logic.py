@@ -11,6 +11,7 @@ from DataStructures.List import array_list as al
 from DataStructures.Graph import dijkstra as djk
 from DataStructures.Priority_queue import priority_queue as pqe
 from DataStructures.Stack import stack as s
+from DataStructures.Graph import bfs as bfs
 
 def new_logic():
     """
@@ -328,12 +329,15 @@ def req_1(catalog, lat_o, lon_o, lat_d, lon_d, grulla_id):
 
 
 
-def req_2(catalog):
+def req_2(catalog, p_origen, p_destino, radio):
     """
     Retorna el resultado del requerimiento 2
     """
     # TODO: Modificar el requerimiento 2
-    pass
+    migraciones = catalog["grafo_migraciones"]
+    movimientos_xAreas = bfs.bfs(migraciones, p_origen)
+    
+    
 
 
 def req_3(catalog):

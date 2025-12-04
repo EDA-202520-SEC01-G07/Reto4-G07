@@ -17,7 +17,7 @@ def bfs_vertex(my_graph, source, visited_map):
 
     while not q.is_empty(cola):
         v = q.dequeue(cola)
-        lista = G.adjacent(my_graph, v) #Es un mapa
+        lista = G.adjacent(my_graph, v)
         for i in range(lt.size(lista)):
             w = lt.get_element(lista, i)
             if w is not None:
