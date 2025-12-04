@@ -22,7 +22,8 @@ def add_edge (my_graph, key_u, key_v, weight=1.0):
     if vertex_v is None:
         raise Exception("El vertice v no existe")
     
-    vertex_u = vert.add_adjacent(vertex_u, key_v, weight)
+    vert.add_adjacent(vertex_u, key_v, weight)
+    ml.put(my_graph["vertices"], key_u, vertex_u)
     my_graph["num_edges"] += 1
     return my_graph
 
