@@ -116,10 +116,10 @@ def print_req_2(control):
 
 
 def print_req_3(control):
-    """
-        Función que imprime la solución del Requerimiento 3 en consola
-    """
-    # TODO: Imprimir el resultado del requerimiento 3
+    if control is None:
+        print("Primero debe cargar la información (opción 0).\n")
+        return
+    
     resultado = lg.req_3(control)
 
     if resultado is None:
@@ -135,15 +135,16 @@ def print_req_3(control):
     print(f"Total de individuos (grullas) que usan la ruta: {total_individuos}")
     print("==================\n")
 
-    if primeros:
+    if len(primeros) > 0:
         print("--- Primeros 5 puntos de la ruta ---")
         print(tb.tabulate(primeros, headers="keys", tablefmt="fancy_grid"))
         print()
 
-    if ultimos:
+    if len(ultimos) > 0:
         print("--- Últimos 5 puntos de la ruta ---")
         print(tb.tabulate(ultimos, headers="keys", tablefmt="fancy_grid"))
         print()
+
 
 
 
