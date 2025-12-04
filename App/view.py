@@ -3,6 +3,7 @@ import tabulate as tb
 from App import logic as lg
 from DataStructures.Map import map_separate_chaining as m
 from DataStructures.Priority_queue import priority_queue as pq
+from DataStructures.List import array_list as al
 from DataStructures.Graph import digraph as d
 def new_logic():
     """
@@ -36,7 +37,7 @@ def load_data(control):
     print("Tiempo de carga: " + str(round(tiempo,3)))
     print("==================")
     print("Total de grullas reconocidas: "+str(len(grullas)))
-    print("Total de eventos cargados: "+str(pq.size(control["eventos"])))
+    print("Total de eventos cargados: "+str(al.size(control["eventos"])))
     print("Total de nodos del grafo: "+str(d.order(control["grafo_migraciones"])))
     print("Total de arcos en el grafo [migraciones]: " + str(d.size(control["grafo_migraciones"])))
     print("Total de arcos en el grafo [hídrico]: " + str(d.size(control["grafo_hidrico"])))

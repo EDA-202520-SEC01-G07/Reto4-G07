@@ -125,44 +125,35 @@ def load_data(catalog, filename):
         promedio = round(arcos[(nodoA, nodoB)][0]/arcos[(nodoA, nodoB)][1], 2)
         d.add_edge(g_mig, nodoA, nodoB, promedio)
 
-        # 4. CREAR ARCOS DE PROXIMIDAD HÍDRICA
+    # 4. CREAR ARCOS DE PROXIMIDAD HÍDRICA 
     grafo_hidrico = catalog["grafo_hidrico"]
-    for i in range(len(llaves)):
-        nodo_i = d.get_vertex_information(grafo_hidrico, llaves[i])
-        for j in range(i+1, len(llaves)):
-            nodo_j = d.get_vertex_information(grafo_hidrico, llaves[j])
-            # 1. A < B en tiempo
-            if nodo_i["time_dt"] >= nodo_j["time_dt"]:
+
+    for grulla_id in grullas_ident:
+        ruta = grullas_ident[grulla_id]  # lista de nodos en orden temporal
+        if len(ruta) < 2:
+            continue
+
+        for i in range(1, len(ruta)):
+            vert_A_id = ruta[i-1]
+            vert_B_id = ruta[i]
+
+            if vert_A_id == vert_B_id:
                 continue
-            # 2. Comparten grulla
-            comparten = False
-            for k in range(al.size(nodo_i["grullas"])):
-                g = al.get_element(nodo_i["grullas"], k)
-                if m.contains(nodo_j["map_eventos"], g):
-                    comparten = True
-                    break
-            if not comparten:
-                continue
-            # 3. Distancia <= 10 km
-            distancia = h.haversine(nodo_i["location"], nodo_j["location"])
-            if distancia > 10:
-                continue
-            # 4. Diferencia tiempo <= 48 horas
-            horas = abs((nodo_j["time_dt"] - nodo_i["time_dt"]).total_seconds()) / 3600
-            if horas > 48:
-                continue
-            # 5. Crear vertices si no existen
-            id_i = nodo_i["event_id"]
-            id_j = nodo_j["event_id"]
-            
-            if not d.contains_vertex(grafo_hidrico, id_i):
-                d.insert_vertex(grafo_hidrico, id_i, nodo_i)
-            if not d.contains_vertex(grafo_hidrico, id_j):
-                d.insert_vertex(grafo_hidrico, id_j, nodo_j)
-          
-            # 6. Agregar arco con peso 
-            peso=nodo_j["prom_agua"][0]
-            d.add_edge(grafo_hidrico, id_i, id_j, peso)
+
+            nodo_A = d.get_vertex_information(g_mig, vert_A_id)
+            nodo_B = d.get_vertex_information(g_mig, vert_B_id)
+
+            # Crear vértices en grafo_hidrico si no existen aún
+            if not d.contains_vertex(grafo_hidrico, vert_A_id):
+                d.insert_vertex(grafo_hidrico, vert_A_id, nodo_A)
+            if not d.contains_vertex(grafo_hidrico, vert_B_id):
+                d.insert_vertex(grafo_hidrico, vert_B_id, nodo_B)
+
+            # Peso hídrico
+            peso = nodo_B["prom_agua"][0]
+            d.add_edge(grafo_hidrico, vert_A_id, vert_B_id, peso)
+
+
 
     end = get_time()
     tiempo = delta_time(start, end)
