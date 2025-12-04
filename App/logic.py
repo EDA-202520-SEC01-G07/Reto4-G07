@@ -10,6 +10,7 @@ from DataStructures.Priority_queue import priority_queue as pq
 from DataStructures.List import array_list as al
 from DataStructures.Graph import dijkstra as djk
 from DataStructures.Stack import stack as s
+from DataStructures.Queue import queue as q
 from DataStructures.Graph import bfs as bfs
 from DataStructures.Graph import dfo_structure as dfo
 from DataStructures.Graph import prim_structure as pr
@@ -431,7 +432,7 @@ def req_3(catalog):
         m.put(dist,v,1)
         m.put(ant,v,None)
     mejor_fin=None
-    mejor_fin
+    mejor_long=0
     
     for u in orden_top:
         du=m.get(dist,u)
@@ -700,8 +701,113 @@ def req_6(catalog):
     Retorna el resultado del requerimiento 6
     """
     # TODO: Modificar el requerimiento 6
-    pass
+    grafo=catalog["grafo_hidrico"]
+    comp_vert={}
+    comp_id=0
+    vertices=d.vertices(grafo)
+    n=al.size(vertices)
+    for i in range(n):
+        v=al.get_element(vertices,i)
+        if m.get(comp_vert,v) is None:
+            comp_id+=1
+            q_nodes=q.new_queue()
+            q.enqueue(q_nodes,v)
+            m.put(comp_vert,v,comp_id)
+            lista_vertices=[]
+            grullas_subred=set()
+            
+            info_v=d.get_vertex_information(grafo,v)
+            lat,lon=info_v["location"]
+            min_lat=lat
+            max_lat=lat
+            min_lon=lon
+            max_lon=lon
+            while not q.is_empty(q_nodes):
+                x=q.dequeue(q_nodes)
+                lista_vertices.append(q.dequeue(x))
+                info_x=d.get_vertex_information(grafo,x)
+                latx,lonx=info_x["location"]
+                if latx<min_lat:
+                    min_lat=latx
+                if latx>max_lat:
+                    max_lat=latx
+                if lonx<min_lon:
+                    min_lon=lonx
+                if lonx>max_lon:
+                    max_lon=lonx
+                tags=info_x["grullas"]
+                for t in range (al.size(tags)):
+                    grullas_subred.add(al.get_element(tags,t))
+                ady=d.adjacent(grafo,x)
+                if ady is not None:
+                    for j in range(al.size(ady)):
+                        w=al.get_element(ady,j)
+                        if m.get(comp_vert,w) is None:
+                            m.put(comp_vert,w,comp_id)
+                            q.enqueue(q_nodes,w)
+            componentes[comp_id]={"id": comp_id,"vertices":lista_vertices,"min_lat":min_lat,"max_lat":max_lat,"min_lon":min_lon,"max_lon":max_lon,"total_grullas":len(grullas_subred)}  
+    total_subredes=len(componentes)
+    if total_subredes==0:
+        return 0,[]
+    lista_comp=[]
+    for cid in componentes:
+        comp=componentes[cid]
+        tam=len(comp["vertices"])
+        comp['tam']=tam
+        lista_comp.append(comp)
+    lista_comp.sort()
+    if len(lista_comp)>5:
+        lista_comp=lista_comp[:5]
+    resultado=[]
+    for c in lista_comp:
+        verts=comp["vertices"]
+        tam=comp["tam"]
+        lista_ordenada=[]
+        for v in verts:
+            info_v=d.get_vertex_information(grafo,v)
+            lista_ordenada.append((info_v['timee_dt'],v))
+        lista_ordenada.sort()
+        
+        puntos_prim=[]
+        if tam>=3:
+            limite_p=3
+        else:
+            limite_p=tam
+        for i in range(limite_p):
+            nd,vid=lista_ordenada[i]
+            info_v=d.get_vertex_information(grafo,vid)
+            lat,lon=info_v["location"]
+            puntos_prim.append({"id":info_v["event_id"],"lat":round(lat,5),"lon":round(lon,5)})
+        
+        puntos_ult=[]
+        for i in range(tam-limite_p,tam):
+            nd,vid=lista_ordenada[i]
+            info_v=d.get_vertex_information(grafo,vid)
+            lat,lon=info_v["location"]
+            puntos_ult.append({"id":info_v["event_id"],"lat":round(lat,5),"lon":round(lon,5)})
 
+        lista_grullas=sorted(list(comp["grullas"]))
+        total_grullas=len(lista_grullas)
+        if total_grullas>=3:
+            limite_g=3
+        else:
+            limite_g=total_grullas
+        grullas_prim=lista_grullas[:limite_g]
+        if limite_g>0:
+            grullas_ult=lista_grullas[-limite_g:]
+        resumen={"id_subred":comp["id"],
+                 "total_puntos":tam,
+                 "min_latitud":round(comp["min_lat"],5),
+                 "max_latitud":round(comp["max_lat"],5),
+                 "min_longitud":round(comp["min_lon"],5),
+                 "max_longitud":round(comp["max_lon"],5),
+                 "total_grullas":total_grullas,
+                 "grullas_prim":grullas_prim,
+                 "grullas_ult":grullas_ult,
+                 "puntos_prim":puntos_prim,
+                 "puntos_ult":puntos_ult}
+        resultado.append(resumen)
+    return total_subredes,resultado
 
 # Funciones para medir tiempos de ejecucion
 
