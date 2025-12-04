@@ -260,20 +260,17 @@ def print_req_6(control):
     print(tb.tabulate(tabla_resumen, headers="keys", tablefmt="fancy_grid"))
     print()
 
-    # Detalle por cada subred
     for comp in subredes:
         print(f"=== Detalle subred {comp['id_subred']} ===")
         print(f"Puntos migratorios en la subred: {comp['num_puntos']}")
         print(f"Total de individuos (grullas) en la subred: {comp['total_grullas']}")
 
-        # puntos
         print("\nPrimeros 3 puntos migratorios (id, lat, lon):")
         print(tb.tabulate(comp["puntos_prim"], headers="keys", tablefmt="fancy_grid"))
 
         print("\nÚltimos 3 puntos migratorios (id, lat, lon):")
         print(tb.tabulate(comp["puntos_ult"], headers="keys", tablefmt="fancy_grid"))
 
-        # grullas
         print("\nPrimeros 3 identificadores de grullas:")
         print(comp["grullas_prim"])
 

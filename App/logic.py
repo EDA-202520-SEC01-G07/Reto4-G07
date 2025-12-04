@@ -702,7 +702,8 @@ def req_6(catalog):
     """
     # TODO: Modificar el requerimiento 6
     grafo=catalog["grafo_hidrico"]
-    comp_vert={}
+    comp_vert=m.new_map(d.order(grafo),7)
+    componentes={}
     comp_id=0
     vertices=d.vertices(grafo)
     n=al.size(vertices)
@@ -742,7 +743,7 @@ def req_6(catalog):
                 if ady is not None:
                     for j in range(al.size(ady)):
                         w=al.get_element(ady,j)
-                        if m.get(comp_vert,w) is None:
+                        if m.get(componentes,w) is None:
                             m.put(comp_vert,w,comp_id)
                             q.enqueue(q_nodes,w)
             componentes[comp_id]={"id": comp_id,"vertices":lista_vertices,"min_lat":min_lat,"max_lat":max_lat,"min_lon":min_lon,"max_lon":max_lon,"total_grullas":len(grullas_subred)}  
