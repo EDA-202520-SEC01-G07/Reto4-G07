@@ -20,6 +20,7 @@ def new_logic():
     #TODO: Llama a las funciónes de creación de las estructuras de datos
     catalog = {
         "eventos": None,
+        "vertices_llaves": None,
         "grafo_migraciones": None,
         "grafo_hidrico": None
     }
@@ -59,6 +60,7 @@ def load_data(catalog, filename):
     grulla_0 = al.first_element(catalog["eventos"]) #Me da la primera grulla
     primer_vert = nuevo_vertice(grulla_0)
     llaves.append(grulla_0["id"])
+
     d.insert_vertex(g_mig, grulla_0["id"], primer_vert)
     d.insert_vertex(g_hid, grulla_0["id"], primer_vert)
     
@@ -87,8 +89,9 @@ def load_data(catalog, filename):
             d.insert_vertex(g_hid, grulla["id"], vertice)
             llaves.append(grulla["id"])
             grullas_ident[grulla["tag-local-identifier"]].append(grulla["id"])
-    
-    
+    v = d.get_vertex(g_mig, grulla_0["id"])
+
+    catalog["vertices_llaves"] = llaves
     # 3. CREAR ARCOS DE DESPLAZAMIENTO
     arcos = {}
     for grulla_id in grullas_ident:
@@ -153,9 +156,7 @@ def load_data(catalog, filename):
             # Peso hídrico
             peso = nodo_B["prom_agua"][0]
             d.add_edge(grafo_hidrico, vert_A_id, vert_B_id, peso)
-
-
-
+    v = d.get_vertex(g_mig, grulla_0["id"])
     end = get_time()
     tiempo = delta_time(start, end)
     return tiempo, grullas_ident, llaves
@@ -319,17 +320,64 @@ def req_1(catalog, lat_o, lon_o, lat_d, lon_d, grulla_id):
     }
 
 
-
 def req_2(catalog, p_origen, p_destino, radio):
     """
     Retorna el resultado del requerimiento 2
     """
     # TODO: Modificar el requerimiento 2
+    start=get_time()
     migraciones = catalog["grafo_migraciones"]
-    movimientos_xAreas = bfs.bfs(migraciones, p_origen)
+    vertices = catalog["vertices_llaves"]
+    nodo_origen = None
+    minO = 99999999999999
+    nodo_destino = None
+    minD = 99999999999999
     
+    for i in vertices:
+        nodo = d.get_vertex_information(migraciones, i)
+        distancia = h.haversine((p_origen[0], p_origen[1]), nodo["location"])
+        if distancia < minO:
+            nodo_origen = i
+            minO = distancia
+        distancia = h.haversine((p_destino[0], p_destino[1]), nodo["location"])
+        if distancia < minD:
+            nodo_destino = i
+            minD = distancia
+    if nodo_origen is not None or nodo_destino is not None:
+        caminosMigraciones = bfs.bfs(migraciones, nodo_origen)
+    else:
+        return "No se pudo determinar nodo origen o destino."
+    camino = bfs.path_to(nodo_destino, caminosMigraciones)
+    if camino is None:
+        return "No existe una ruta viable entre los puntos."
     
-
+    resultado = {}
+    dist_total = 0
+    ultimo = None
+    while not s.is_empty(camino):
+        elem = s.pop(camino)
+        vert = d.get_vertex_information(migraciones, elem)
+        mapa_bfs = m.get(caminosMigraciones, elem)
+        if mapa_bfs is None:
+            continue
+        dist_to = mapa_bfs["dist_to"]
+        if dist_to <= radio:    
+            ultimo = vert
+            resultado[vert["id"]] = {"Location": vert["location"],
+                "Grullas": vert["grullas"],
+                "Primeros 3": vert["grullas"][0:3],
+                "Últimos 3": vert["grullas"][-1:-4],
+                "dist_to": dist_to}
+        else:
+            continue
+        
+    r = {"Ultimo en radio: ":ultimo,
+         "Distancia total: ": round(dist_total, 3),
+         "Total nodos": len(resultado),
+         "Camino":resultado}
+    end=get_time()
+    tiempo = delta_time(start, end)
+    return r, tiempo
 
 def req_3(catalog):
     """
@@ -339,12 +387,22 @@ def req_3(catalog):
     pass
 
 
-def req_4(catalog):
+def req_4(catalog, p_origen):
     """
     Retorna el resultado del requerimiento 4
     """
     # TODO: Modificar el requerimiento 4
-    pass
+    migraciones = catalog["grafo_hidrico"]
+    vertices = catalog["vertices_llaves"]
+    nodo_origen = None
+    minO = 99999999999999
+    
+    for i in vertices:
+        nodo = d.get_vertex_information(migraciones, i)
+        distancia = h.haversine((p_origen[0], p_origen[1]), nodo["location"])
+        if distancia < minO:
+            nodo_origen = i
+            minO = distancia
 
 
 

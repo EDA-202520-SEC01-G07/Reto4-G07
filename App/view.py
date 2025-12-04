@@ -28,7 +28,6 @@ def load_data(control):
     Carga los datos
     """
     #TODO: Realizar la carga de datos
-    control = new_logic()
     file = input('Diga el archivo que quiere evaluar (small, large, 30pct, 80pct)\n').strip().lower()
     file = "data/1000_cranes_mongolia_"+file+".csv"
     tiempo, grullas, llaves = lg.load_data(control, file)
@@ -107,12 +106,20 @@ def print_req_2(control):
         Función que imprime la solución del Requerimiento 2 en consola
     """
     # TODO: Imprimir el resultado del requerimiento 2
-    lat_o = float(input("Latitud del punto de origen: "))
-    lon_o = float(input("Longitud del punto de origen: "))
-    lat_d = float(input("Latitud del punto de destino: "))
-    lon_d = float(input("Longitud del punto de destino: "))
-    radio = float(input("Indique el área de interés (Km): "))
-    
+    #lat_o = float(input("Latitud del punto de origen: "))
+    #lon_o = float(input("Longitud del punto de origen: "))
+    #lat_d = float(input("Latitud del punto de destino: "))
+    #lon_d = float(input("Longitud del punto de destino: "))
+    #radio = float(input("Indique el área de interés (Km): "))
+    lat_o = 27.75878333
+    lon_o = 81.3055
+    lat_d = 27.75416667
+    lon_d = 81.29623333
+    radio = 100
+    resultado, tiempo = lg.req_2(control, (lat_o, lon_o), (lat_d, lon_d), radio)
+    print("--- DETECTAR MOVIMIENTOS MIGRATORIOS ALREDEDOR DE UN ÁREA ---")
+    print("Tiempo de ejecución: "+str(round(tiempo, 4)))
+    print(resultado)
 
 
 def print_req_3(control):
@@ -128,7 +135,10 @@ def print_req_4(control):
         Función que imprime la solución del Requerimiento 4 en consola
     """
     # TODO: Imprimir el resultado del requerimiento 4
-    pass
+    #lat_o = float(input("Latitud del punto de origen: "))
+    #lon_o = float(input("Longitud del punto de origen: "))
+    lat_o = 27.75878333
+    lon_o = 81.3055
 
 
 def print_req_5(result):
