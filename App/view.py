@@ -28,7 +28,7 @@ def load_data(control):
     Carga los datos
     """
     #TODO: Realizar la carga de datos
-    control = new_logic()
+   
     file = input('Diga el archivo que quiere evaluar (small, large, 30pct, 80pct)\n').strip().lower()
     file = "data/1000_cranes_mongolia_"+file+".csv"
     tiempo, grullas, llaves = lg.load_data(control, file)
@@ -201,7 +201,60 @@ def print_req_6(control):
         Función que imprime la solución del Requerimiento 6 en consola
     """
     # TODO: Imprimir el resultado del requerimiento 6
-    pass
+    if control is None:
+        print("Primero debe cargar la información (opción 0).\n")
+        return
+
+    total_subredes, subredes = lg.req_6(control)
+
+    if total_subredes == 0:
+        print("No se reconoce ninguna subred hídrica viable dentro del nicho biológico.\n")
+        return
+
+    print("==================")
+    print("REQUERIMIENTO 6: Subredes hídricas dentro del nicho biológico")
+    print("==================")
+    print(f"Total de subredes hídricas identificadas: {total_subredes}\n")
+
+    # Tabla resumen de las subredes (top 5)
+    tabla_resumen = []
+    for comp in subredes:
+        fila = {
+            "Id subred": comp["id_subred"],
+            "# puntos": comp["num_puntos"],
+            "Lat min": comp["min_lat"],
+            "Lat max": comp["max_lat"],
+            "Lon min": comp["min_lon"],
+            "Lon max": comp["max_lon"],
+            "# grullas": comp["total_grullas"]
+        }
+        tabla_resumen.append(fila)
+
+    print("--- Subredes hídricas más grandes ---")
+    print(tb.tabulate(tabla_resumen, headers="keys", tablefmt="fancy_grid"))
+    print()
+
+    # Detalle por cada subred
+    for comp in subredes:
+        print(f"=== Detalle subred {comp['id_subred']} ===")
+        print(f"Puntos migratorios en la subred: {comp['num_puntos']}")
+        print(f"Total de individuos (grullas) en la subred: {comp['total_grullas']}")
+
+        # puntos
+        print("\nPrimeros 3 puntos migratorios (id, lat, lon):")
+        print(tb.tabulate(comp["puntos_prim"], headers="keys", tablefmt="fancy_grid"))
+
+        print("\nÚltimos 3 puntos migratorios (id, lat, lon):")
+        print(tb.tabulate(comp["puntos_ult"], headers="keys", tablefmt="fancy_grid"))
+
+        # grullas
+        print("\nPrimeros 3 identificadores de grullas:")
+        print(comp["grullas_prim"])
+
+        print("Últimos 3 identificadores de grullas:")
+        print(comp["grullas_ult"])
+        print("\n")
+
 
 # Se crea la lógica asociado a la vista
 control = new_logic()
