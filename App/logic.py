@@ -12,6 +12,8 @@ from DataStructures.Graph import dijkstra as djk
 from DataStructures.Priority_queue import priority_queue as pqe
 from DataStructures.Stack import stack as s
 from DataStructures.Graph import bfs as bfs
+from DataStructures.Graph import dfo_structure as dfo
+from DataStructures.Graph import digraph as G
 
 def new_logic():
     """
@@ -336,7 +338,39 @@ def req_3(catalog):
     Retorna el resultado del requerimiento 3
     """
     # TODO: Modificar el requerimiento 3
-    pass
+    nicho=catalog["grafo_migraciones"]
+    dfo_result =dfo.dfo(nicho)
+    orden_topologico = dfo_result["reversepost"]
+    ruta_top=[]
+    
+    while not s.is_empty(orden_topologico):
+        ruta_top.append(s.pop(orden_topologico))
+    n=len(ruta_top)
+    dist={}
+    ant={}
+    for i in ruta_top:
+        dist[i]=1
+        ant[i]=None
+    mejor=None
+    
+    for j in ruta_top:
+        for k in G.adjacent(nicho,j):
+            if dist[j]+1>dist.get(k,0):
+                dist[k]=dist[j]+1
+                ant[k]=j
+        if mejor is None or dist[k]>dist[mejor]:
+                    mejor=k
+                    
+    if mejor is None or dist[mejor] < 2:
+        return None
+    path=[]
+    actual=mejor
+    
+    while actual is not None:
+        path.append(actual)
+        actual=ant[actual]
+    path.reverse()
+    return path
 
 
 def req_4(catalog):
