@@ -154,19 +154,11 @@ def load_data(catalog, filename):
                 d.insert_vertex(grafo_hidrico, nodo_j["event_id"], None)
             # 6. REVISAR SI YA EXISTE ARCO (super eficiente)
             adj_i = d.get_vertex(grafo_hidrico, nodo_i["event_id"])["adjacents"]
-<<<<<<< HEAD
-            if not m.contains(adj_i, nodo_j["event_id"]):
-                # 7. Agregar arco con peso redondeado
-                d.add_edge(grafo_hidrico, nodo_i["event_id"], nodo_j["event_id"], round(distancia, 2))
-            
-
-=======
             #if m.contains(adj_i, nodo_j["event_id"]):
                # continue
             # 7. Agregar arco con peso redondeado
             d.add_edge(grafo_hidrico, nodo_i["event_id"], nodo_j["event_id"], round(distancia, 2))
     """
->>>>>>> a2191655aeb43a13e181d354daf4554c416828bc
     end = get_time()
     tiempo = delta_time(start, end)
     return tiempo, grullas_ident, llaves
