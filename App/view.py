@@ -124,12 +124,44 @@ def print_req_4(control):
     pass
 
 
-def print_req_5(control):
-    """
-        Función que imprime la solución del Requerimiento 5 en consola
-    """
-    # TODO: Imprimir el resultado del requerimiento 5
-    pass
+def print_req_5(result):
+    if "error" in result:
+        print("\nError:", result["error"])
+        return
+
+    print("\n==============================================")
+    print("                REQ 5  RUTA EFICIENTE")
+    print("==============================================\n")
+
+    print(f"Nodo origen más cercano: {result['origen_id']}")
+    print(f"Nodo destino más cercano: {result['destino_id']}")
+    print(f"Costo total del camino: {result['total_cost']}")
+    print(f"Total nodos en la ruta: {result['total_nodos']}")
+    print(f"Total segmentos: {result['total_segmentos']}\n")
+
+    print("--------------  CAMINO DETALLADO  --------------\n")
+
+    camino = result["camino"]
+
+    for i in range(result["total_nodos"]):
+        nodo = camino[i]
+
+        print(f"Nodo {i+1}:")
+        print(f"   ID: {nodo['id']}")
+        print(f"   Ubicación: ({nodo['lat']}, {nodo['lon']})")
+        print(f"   Conteo de grullas: {nodo['conteo']}")
+        print(f"   Primeros 3 tags: {nodo['primeros3']}")
+        print(f"   Últimos 3 tags: {nodo['ultimos3']}")
+
+        if nodo["dist_next"] is None:
+            print("   Distancia al siguiente nodo: N/A (último nodo)")
+        else:
+            print(f"   Distancia al siguiente nodo: {nodo['dist_next']} km")
+
+        print("-" * 50)
+
+    print("\nFin del reporte del requerimiento 5.\n")
+
 
 
 def print_req_6(control):
