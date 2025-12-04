@@ -10,10 +10,10 @@ from DataStructures.Priority_queue import priority_queue as pq
 from DataStructures.List import array_list as al
 from DataStructures.Graph import dijkstra as djk
 from DataStructures.Stack import stack as s
+from DataStructures.Queue import queue as q
 from DataStructures.Graph import bfs as bfs
 from DataStructures.Graph import dfo_structure as dfo
 from DataStructures.Graph import prim_structure as pr
-from DataStructures.Graph import digraph as G
 from DataStructures.List import single_linked_list as sl
 def new_logic():
     """
@@ -702,8 +702,9 @@ def req_6(catalog):
     Retorna el resultado del requerimiento 6
     """
     # TODO: Modificar el requerimiento 6
-     grafo=catalog["grafo_hidrico"]
-    comp_vert={}
+    grafo=catalog["grafo_hidrico"]
+    comp_vert=m.new_map(d.order(grafo),7)
+    componentes={}
     comp_id=0
     vertices=d.vertices(grafo)
     n=al.size(vertices)
