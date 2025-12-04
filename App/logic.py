@@ -10,7 +10,6 @@ from DataStructures.Priority_queue import priority_queue as pq
 from DataStructures.List import array_list as al
 from DataStructures.Graph import dijkstra as djk
 from DataStructures.Stack import stack as s
-from DataStructures.Queue import queue as q
 from DataStructures.Graph import bfs as bfs
 from DataStructures.Graph import dfo_structure as dfo
 from DataStructures.Graph import prim_structure as pr
@@ -327,7 +326,8 @@ def req_1(catalog, lat_o, lon_o, lat_d, lon_d, grulla_id):
 
     mensaje = ("El individuo aparece por primera vez en el nodo: " + str(first)) if first != "Unknown" else "Unknown"
 
-    return {"origen_id":oid,"destino_id":did,"mensaje_first_node":mensaje,"total_dist":round(total_dist,2),"total_nodos":total_n,"primeros5":primeros5,"ultimos5":ultimos5}
+    return {"origen_id":oid,"destino_id":did,"mensaje_first_node":mensaje,
+            "total_dist":round(total_dist,2),"total_nodos":total_n,"primeros5":primeros5,"ultimos5":ultimos5}
 
 
 
@@ -432,7 +432,7 @@ def req_3(catalog):
         m.put(dist,v,1)
         m.put(ant,v,None)
     mejor_fin=None
-    mejor_long=0
+    mejor_fin
     
     for u in orden_top:
         du=m.get(dist,u)
@@ -693,7 +693,8 @@ def req_5(catalog, lat_o, lon_o, lat_d, lon_d, grafo_tipo):
     total_nodos = len(camino)
     total_segmentos = total_nodos - 1 if total_nodos > 0 else 0
     total_cost = round(total_cost, 2)
-    return {"origen_id": source, "destino_id": target, "total_cost": total_cost, "total_nodos": total_nodos, "total_segmentos": total_segmentos, "camino": camino}
+    return {"origen_id": source, "destino_id": target, "total_cost": total_cost, 
+            "total_nodos": total_nodos, "total_segmentos": total_segmentos, "camino": camino}
 
 
 def req_6(catalog):
@@ -701,9 +702,8 @@ def req_6(catalog):
     Retorna el resultado del requerimiento 6
     """
     # TODO: Modificar el requerimiento 6
-    grafo=catalog["grafo_hidrico"]
-    comp_vert=m.new_map(d.order(grafo),7)
-    componentes={}
+     grafo=catalog["grafo_hidrico"]
+    comp_vert={}
     comp_id=0
     vertices=d.vertices(grafo)
     n=al.size(vertices)
@@ -743,7 +743,7 @@ def req_6(catalog):
                 if ady is not None:
                     for j in range(al.size(ady)):
                         w=al.get_element(ady,j)
-                        if m.get(componentes,w) is None:
+                        if m.get(comp_vert,w) is None:
                             m.put(comp_vert,w,comp_id)
                             q.enqueue(q_nodes,w)
             componentes[comp_id]={"id": comp_id,"vertices":lista_vertices,"min_lat":min_lat,"max_lat":max_lat,"min_lon":min_lon,"max_lon":max_lon,"total_grullas":len(grullas_subred)}  
@@ -809,6 +809,7 @@ def req_6(catalog):
                  "puntos_ult":puntos_ult}
         resultado.append(resumen)
     return total_subredes,resultado
+
 
 # Funciones para medir tiempos de ejecucion
 
