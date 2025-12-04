@@ -86,4 +86,5 @@ def conexiones_costo(grafo, prim):
         nodos["edges"].append(u)
         nodos["vertice"].append(vertice)
         nodos["dist_to"].append(prim["dist_to"][vertice])
+    nodos["peso_total"] = peso_total
     return nodos

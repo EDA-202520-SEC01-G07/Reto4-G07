@@ -13,6 +13,7 @@ from DataStructures.Priority_queue import priority_queue as pqe
 from DataStructures.Stack import stack as s
 from DataStructures.Graph import bfs as bfs
 from DataStructures.Graph import dfo_structure as dfo
+from DataStructures.Graph import prim_structure as pr
 
 
 def new_logic():
@@ -366,7 +367,7 @@ def req_2(catalog, p_origen, p_destino, radio):
         if dist_to <= radio:    
             ultimo = vert
             resultado[vert["id"]] = {"Location": vert["location"],
-                "Grullas": vert["grullas"],
+                "Grullas": len(vert["grullas"]),
                 "Primeros 3": vert["grullas"][0:3],
                 "Últimos 3": vert["grullas"][-1:-4],
                 "dist_to": dist_to}
@@ -495,24 +496,72 @@ def req_3(catalog):
                "Conteo de eventos":info_v["conteo"]}
         ultimos.append(datos)
     return tot_puntos,tot_individuos,primeros,ultimos
-def req_4(catalog):
+
+def req_4(catalog, p_origen):
     """
     Retorna el resultado del requerimiento 4
     """
     # TODO: Modificar el requerimiento 4
-    migraciones = catalog["grafo_hidrico"]
+    start = get_time()
+    hidrico = catalog["grafo_hidrico"]
     vertices = catalog["vertices_llaves"]
     nodo_origen = None
     minO = 99999999999999
     
     for i in vertices:
-        nodo = d.get_vertex_information(migraciones, i)
+        nodo = d.get_vertex_information(hidrico, i)
         distancia = h.haversine((p_origen[0], p_origen[1]), nodo["location"])
         if distancia < minO:
             nodo_origen = i
             minO = distancia
-
-
+    cam_efic = pr.prim(hidrico, nodo_origen)
+    estructura_prim = pr.conexiones_costo(hidrico, cam_efic)
+    #porque los prim deben tener siempre n-1 vértices, si no se cumple entonces podemos decir que el grafo no es conexo
+    if len(cam_efic) != (d.order(hidrico) -1):
+        return "No hay una red hídrica viable para el origen elegido"
+    resultado = {"Total de puntos": len(cam_efic),
+                 "Total de individuos": len(cam_efic),
+                 "Distancia total": estructura_prim["peso_totoal"]}
+    primeros = []
+    ultimos = []
+    nodos = estructura_prim["vertice"]
+    for i in range(5):
+        vertice = d.get_vertex_information(hidrico, nodos[i])
+        p3 = []
+        u3 = []
+        keys = m.key_set(m.get(vertice["map_eventos"]))
+        for j in range(3):
+            p3.append(m.get(vertice["map_eventos"], al.get_element(keys, j)))
+            
+        for k in range(m.size(vertice["map_eventos"])-3, m.size(vertice["map_eventos"])):
+            u3.append(m.get(vertice["map_eventos"], al.get_element(keys, k)))
+        elemento = {"Id": vertice["id"],
+                    "Location": vertice["location"],
+                    "Grullas": len(vertice["grullas"]),
+                    "3 Primeros": p3,
+                    "3 Últimos": u3}
+        primeros.append(elemento)
+        
+    for i in range(len(nodos)-1, len(nodos)):
+        vertice = d.get_vertex_information(hidrico, nodos[i])
+        p3 = []
+        u3 = []
+        keys = m.key_set(m.get(vertice["map_eventos"]))
+        for j in range(3):
+            p3.append(m.get(vertice["map_eventos"], al.get_element(keys, j)))
+            
+        for k in range(m.size(vertice["map_eventos"])-3, m.size(vertice["map_eventos"])):
+            u3.append(m.get(vertice["map_eventos"], al.get_element(keys, k)))
+        elemento = {"Id": vertice["id"],
+                    "Location": vertice["location"],
+                    "Grullas": len(vertice["grullas"]),
+                    "3 Primeros": p3,
+                    "3 Últimos": u3}
+        ultimos.append(elemento)
+    end = get_time()
+    tiempo = delta_time(start, end)
+    return resultado, tiempo
+    
 
 def req_5(catalog, lat_o, lon_o, lat_d, lon_d, grafo_tipo="migraciones"):
 

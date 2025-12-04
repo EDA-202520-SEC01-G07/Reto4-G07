@@ -117,7 +117,9 @@ def print_req_2(control):
     lon_d = 81.29623333
     radio = 100
     resultado, tiempo = lg.req_2(control, (lat_o, lon_o), (lat_d, lon_d), radio)
-    print("--- DETECTAR MOVIMIENTOS MIGRATORIOS ALREDEDOR DE UN ÁREA ---")
+    print("\n==============================================")
+    print("     REQ 2 - MOVIMIENTOS MIGRATORIOS ALREDEDOR DE UN ÁREA")
+    print("==============================================")
     print("Tiempo de ejecución: "+str(round(tiempo, 4)))
     print(resultado)
 
@@ -164,7 +166,12 @@ def print_req_4(control):
     #lon_o = float(input("Longitud del punto de origen: "))
     lat_o = 27.75878333
     lon_o = 81.3055
-
+    resultado, tiempo = lg.req_4(control, (lat_o, lon_o))
+    print("\n==============================================")
+    print("       REQ 4 - CORREDORES HÍDIRICOS ÓPTIMOS")
+    print("==============================================")
+    print("Tiempo de ejecución: "+str(round(tiempo, 4)))
+    print(tb.tabulate(resultado, headers="keys", tablefmt="fancy_grid"))
 
 def print_req_5(result):
     if "error" in result:
@@ -172,7 +179,7 @@ def print_req_5(result):
         return
 
     print("\n==============================================")
-    print("                REQ 5  RUTA EFICIENTE")
+    print("                REQ 5 - RUTA EFICIENTE")
     print("==============================================\n")
 
     print(f"Nodo origen más cercano: {result['origen_id']}")
