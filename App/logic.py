@@ -8,6 +8,9 @@ from DataStructures.Graph import dfs as dfs
 from DataStructures.Map import map_separate_chaining as m
 from DataStructures.Priority_queue import priority_queue as pq
 from DataStructures.List import array_list as al
+from DataStructures.Graph import dijkstra as djk
+from DataStructures.Priority_queue import priority_queue as pqe
+from DataStructures.Stack import stack as s
 
 def new_logic():
     """
@@ -222,12 +225,102 @@ def presentacion_datos(catalog, llaves):
 
 # Funciones de consulta sobre el catálogo
 
+def req_1(catalog, lat_o, lon_o, lat_d, lon_d, grulla_id):
+    nodos = catalog["vertices"]
+    grafo = catalog["grafo_desplazamiento"]
 
-def req_1(catalog, id_grulla, tiempo_inicio, tiempo_final):
-    """
-    Retorna el resultado del requerimiento 1
-    """
-    pass
+    # 1. Encontrar nodo origen más cercano
+    llaves = m.key_set(nodos)
+    nodo_origen = None
+    min_dist_origen = float("inf")
+
+    for i in range(1, al.size(llaves) + 1):
+        key = al.get_element(llaves, i)
+        nodo = m.get(nodos, key)
+        dist = h.haversine((lat_o, lon_o), nodo["location"])
+
+        if dist < min_dist_origen:
+            min_dist_origen = dist
+            nodo_origen = nodo
+
+    # 2. Encontrar nodo destino más cercano
+    nodo_destino = None
+    min_dist_destino = float("inf")
+
+    for i in range(1, al.size(llaves) + 1):
+        key = al.get_element(llaves, i)
+        nodo = m.get(nodos, key)
+        dist = h.haversine((lat_d, lon_d), nodo["location"])
+
+        if dist < min_dist_destino:
+            min_dist_destino = dist
+            nodo_destino = nodo
+    if nodo_origen is None:
+        return {"error": "No se encontró un nodo de origen cercano."}
+
+    if nodo_destino is None:
+        return {"error": "No se encontró un nodo de destino cercano."}
+
+    # 3. Verificar que la grulla esté en el nodo origen
+    if not m.contains(nodo_origen["map_eventos"], grulla_id):
+        return {"error": "El individuo no aparece en este nicho biológico."}
+
+    # 4. DFS desde el nodo de origen
+    search = dfs.dfs(grafo, nodo_origen["event_id"])
+
+    if not dfs.has_path_to(search, nodo_destino["event_id"]):
+        return {"error": "No existe una ruta viable entre los puntos."}
+
+    # Obtiene el camino de IDs
+    path_ids = dfs.path_to(search, nodo_destino["event_id"])
+
+    # 5. Construir toda la información del camino
+    total_dist = 0
+    nodos_camino = []
+
+    for i in range(len(path_ids)):
+        id_nodo = path_ids[i]
+        nodo = m.get(nodos, id_nodo)
+
+        lista_grullas = nodo["grullas"]
+        n = al.size(lista_grullas)
+
+        primeros3 = []
+        ultimos3 = []
+
+        for j in range(1, min(4, n + 1)):
+            primeros3.append(al.get_element(lista_grullas, j))
+
+        for j in range(max(1, n - 2), n + 1):
+            ultimos3.append(al.get_element(lista_grullas, j))
+
+        dist_next = None
+        if i < len(path_ids) - 1:
+            siguiente = path_ids[i + 1]
+            vert_actual = m.get(grafo["vertices"], id_nodo)
+            dist_next = m.get(vert_actual["adjacents"], siguiente)
+
+            if dist_next is not None:
+                total_dist += dist_next
+
+        nodos_camino.append({
+            "id": id_nodo,
+            "lat": nodo["location"][0],
+            "lon": nodo["location"][1],
+            "conteo": nodo["conteo"],
+            "primeros3": primeros3,
+            "ultimos3": ultimos3,
+            "dist_next": dist_next
+        })
+
+    return {
+        "origen_id": nodo_origen["event_id"],
+        "destino_id": nodo_destino["event_id"],
+        "total_dist": total_dist,
+        "total_nodos": len(path_ids),
+        "camino": nodos_camino
+    }
+
 
 
 def req_2(catalog):
@@ -254,12 +347,128 @@ def req_4(catalog):
     pass
 
 
-def req_5(catalog):
+
+def req_5(catalog, lat_o, lon_o, lat_d, lon_d, grafo_tipo="desplazamiento"):
     """
-    Retorna el resultado del requerimiento 5
+    Req 5 usando el Dijkstra propio del proyecto.
+    Sin set(), sin try/except, sin .get()
     """
-    # TODO: Modificar el requerimiento 5
-    pass
+
+    nodos = catalog["vertices"]
+
+    # escoger grafo correcto
+    if grafo_tipo == "hidrico":
+        grafo = catalog["grafo_hidrico"]
+    else:
+        grafo = catalog["grafo_desplazamiento"]
+
+    llaves = m.key_set(nodos)
+    if llaves is None or al.size(llaves) == 0:
+        return {"error": "No hay nodos en el catálogo."}
+
+
+    # 1. ENCONTRAR NODO ORIGEN Y DESTINO MÁS CERCANOS
+
+    nodo_origen = None
+    nodo_destino = None
+    min_origen = 999999999999999999999999
+    min_destino = 999999999999999999999999
+
+    for i in range(1, al.size(llaves) + 1):
+        key = al.get_element(llaves, i)
+        nodo = m.get(nodos, key)
+
+        loc = nodo["location"]
+        dist_o = h.haversine((lat_o, lon_o), loc)
+        dist_d = h.haversine((lat_d, lon_d), loc)
+
+        if dist_o < min_origen:
+            min_origen = dist_o
+            nodo_origen = nodo
+
+        if dist_d < min_destino:
+            min_destino = dist_d
+            nodo_destino = nodo
+
+    if nodo_origen is None:
+        return {"error": "No existe nodo origen cercano."}
+    if nodo_destino is None:
+        return {"error": "No existe nodo destino cercano."}
+
+    source = nodo_origen["event_id"]
+    target = nodo_destino["event_id"]
+
+    # 2. CORRER DIJKSTRA 
+    dijk = djk.dijkstra(grafo, source)
+    if dijk is None:
+        return {"error": "El nodo origen no existe en el grafo."}
+
+    if not djk.has_path_to(target, dijk):
+        return {"error": "No existe un camino entre los puntos."}
+
+
+    # 3. RECONSTRUIR PATH
+
+    stack_path = djk.path_to(target, dijk)
+
+    path_ids = []
+    while not s.is_empty(stack_path):
+        x = s.pop(stack_path)
+        path_ids.append(x)
+
+    total_cost = round(djk.dist_to(target, dijk), 2)
+
+
+    # 4. CONSTRUIR INFORMACIÓN DE NODOS
+
+    camino = []
+    total_nodos = len(path_ids)
+
+    for i in range(total_nodos):
+        node_id = path_ids[i]
+        nodo = m.get(nodos, node_id)
+
+        lista = nodo["grullas"]
+        n = al.size(lista)
+
+        primeros3 = []
+        ultimos3 = []
+
+        for j in range(1, min(4, n + 1)):
+            primeros3.append(al.get_element(lista, j))
+
+        for j in range(max(1, n - 2), n + 1):
+            ultimos3.append(al.get_element(lista, j))
+
+        # distancia al siguiente
+        dist_next = None
+        if i < total_nodos - 1:
+            siguiente = path_ids[i + 1]
+            vert = d.get_vertex(grafo, node_id)
+            ady = vert["adjacents"]
+            peso = m.get(ady, siguiente)
+            if peso is not None:
+                dist_next = round(float(peso), 2)
+
+        camino.append({
+            "id": node_id,
+            "lat": nodo["location"][0],
+            "lon": nodo["location"][1],
+            "conteo": nodo["conteo"],
+            "primeros3": primeros3,
+            "ultimos3": ultimos3,
+            "dist_next": dist_next
+        })
+
+    return {
+        "origen_id": source,
+        "destino_id": target,
+        "total_cost": total_cost,
+        "total_nodos": total_nodos,
+        "total_segmentos": total_nodos - 1,
+        "camino": camino
+    }
+
 
 def req_6(catalog):
     """
