@@ -112,19 +112,27 @@ def print_req_2(control):
         Función que imprime la solución del Requerimiento 2 en consola
     """
     # TODO: Imprimir el resultado del requerimiento 2
-    lat_o = float(input("Latitud del punto de origen: "))
-    lon_o = float(input("Longitud del punto de origen: "))
-    lat_d = float(input("Latitud del punto de destino: "))
-    lon_d = float(input("Longitud del punto de destino: "))
-    radio = float(input("Indique el área de interés (Km): "))
-    
+    #lat_o = float(input("Latitud del punto de origen: "))
+    #lon_o = float(input("Longitud del punto de origen: "))
+    #lat_d = float(input("Latitud del punto de destino: "))
+    #lon_d = float(input("Longitud del punto de destino: "))
+    #radio = float(input("Indique el área de interés (Km): "))
+    lat_o = 27.75878333
+    lon_o = 81.3055
+    lat_d = 27.75416667
+    lon_d = 81.29623333
+    radio = 100
+    resultado, tiempo = lg.req_2(control, (lat_o, lon_o), (lat_d, lon_d), radio)
+    print("--- DETECTAR MOVIMIENTOS MIGRATORIOS ALREDEDOR DE UN ÁREA ---")
+    print("Tiempo de ejecución: "+str(round(tiempo, 4)))
+    print(resultado)
 
 
 def print_req_3(control):
-    """
-        Función que imprime la solución del Requerimiento 3 en consola
-    """
-    # TODO: Imprimir el resultado del requerimiento 3
+    if control is None:
+        print("Primero debe cargar la información (opción 0).\n")
+        return
+    
     resultado = lg.req_3(control)
 
     if resultado is None:
@@ -140,15 +148,16 @@ def print_req_3(control):
     print(f"Total de individuos (grullas) que usan la ruta: {total_individuos}")
     print("==================\n")
 
-    if primeros:
+    if len(primeros) > 0:
         print("--- Primeros 5 puntos de la ruta ---")
         print(tb.tabulate(primeros, headers="keys", tablefmt="fancy_grid"))
         print()
 
-    if ultimos:
+    if len(ultimos) > 0:
         print("--- Últimos 5 puntos de la ruta ---")
         print(tb.tabulate(ultimos, headers="keys", tablefmt="fancy_grid"))
         print()
+
 
 
 
@@ -157,7 +166,10 @@ def print_req_4(control):
         Función que imprime la solución del Requerimiento 4 en consola
     """
     # TODO: Imprimir el resultado del requerimiento 4
-    pass
+    #lat_o = float(input("Latitud del punto de origen: "))
+    #lon_o = float(input("Longitud del punto de origen: "))
+    lat_o = 27.75878333
+    lon_o = 81.3055
 
 
 def print_req_5(control):

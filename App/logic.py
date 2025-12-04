@@ -21,6 +21,7 @@ def new_logic():
     #TODO: Llama a las funciónes de creación de las estructuras de datos
     catalog = {
         "eventos": None,
+        "vertices_llaves": None,
         "grafo_migraciones": None,
         "grafo_hidrico": None
     }
@@ -60,6 +61,7 @@ def load_data(catalog, filename):
     grulla_0 = al.first_element(catalog["eventos"]) #Me da la primera grulla
     primer_vert = nuevo_vertice(grulla_0)
     llaves.append(grulla_0["id"])
+
     d.insert_vertex(g_mig, grulla_0["id"], primer_vert)
     d.insert_vertex(g_hid, grulla_0["id"], primer_vert)
     
@@ -88,8 +90,9 @@ def load_data(catalog, filename):
             d.insert_vertex(g_hid, grulla["id"], vertice)
             llaves.append(grulla["id"])
             grullas_ident[grulla["tag-local-identifier"]].append(grulla["id"])
-    
-    
+    v = d.get_vertex(g_mig, grulla_0["id"])
+
+    catalog["vertices_llaves"] = llaves
     # 3. CREAR ARCOS DE DESPLAZAMIENTO
     arcos = {}
     for grulla_id in grullas_ident:
@@ -154,9 +157,7 @@ def load_data(catalog, filename):
             # Peso hídrico
             peso = nodo_B["prom_agua"][0]
             d.add_edge(grafo_hidrico, vert_A_id, vert_B_id, peso)
-
-
-
+    v = d.get_vertex(g_mig, grulla_0["id"])
     end = get_time()
     tiempo = delta_time(start, end)
     return tiempo, grullas_ident, llaves
@@ -328,17 +329,64 @@ def req_1(catalog, lat_o, lon_o, lat_d, lon_d, grulla_id):
 
 
 
-
 def req_2(catalog, p_origen, p_destino, radio):
     """
     Retorna el resultado del requerimiento 2
     """
     # TODO: Modificar el requerimiento 2
+    start=get_time()
     migraciones = catalog["grafo_migraciones"]
-    movimientos_xAreas = bfs.bfs(migraciones, p_origen)
+    vertices = catalog["vertices_llaves"]
+    nodo_origen = None
+    minO = 99999999999999
+    nodo_destino = None
+    minD = 99999999999999
     
+    for i in vertices:
+        nodo = d.get_vertex_information(migraciones, i)
+        distancia = h.haversine((p_origen[0], p_origen[1]), nodo["location"])
+        if distancia < minO:
+            nodo_origen = i
+            minO = distancia
+        distancia = h.haversine((p_destino[0], p_destino[1]), nodo["location"])
+        if distancia < minD:
+            nodo_destino = i
+            minD = distancia
+    if nodo_origen is not None or nodo_destino is not None:
+        caminosMigraciones = bfs.bfs(migraciones, nodo_origen)
+    else:
+        return "No se pudo determinar nodo origen o destino."
+    camino = bfs.path_to(nodo_destino, caminosMigraciones)
+    if camino is None:
+        return "No existe una ruta viable entre los puntos."
     
-
+    resultado = {}
+    dist_total = 0
+    ultimo = None
+    while not s.is_empty(camino):
+        elem = s.pop(camino)
+        vert = d.get_vertex_information(migraciones, elem)
+        mapa_bfs = m.get(caminosMigraciones, elem)
+        if mapa_bfs is None:
+            continue
+        dist_to = mapa_bfs["dist_to"]
+        if dist_to <= radio:    
+            ultimo = vert
+            resultado[vert["id"]] = {"Location": vert["location"],
+                "Grullas": vert["grullas"],
+                "Primeros 3": vert["grullas"][0:3],
+                "Últimos 3": vert["grullas"][-1:-4],
+                "dist_to": dist_to}
+        else:
+            continue
+        
+    r = {"Ultimo en radio: ":ultimo,
+         "Distancia total: ": round(dist_total, 3),
+         "Total nodos": len(resultado),
+         "Camino":resultado}
+    end=get_time()
+    tiempo = delta_time(start, end)
+    return r, tiempo
 
 def req_3(catalog):
     """
@@ -346,40 +394,114 @@ def req_3(catalog):
     """
     # TODO: Modificar el requerimiento 3
     nicho=catalog["grafo_migraciones"]
-    dfo_result =dfo.dfo(nicho)
-    orden_topologico = dfo_result["reversepost"]
-    ruta_top=[]
+    visitados=m.new_map(d.order(nicho), 7)
+    pila_dfs=s.new_stack()
+    pila_top=s.new_stack()
+    vertices=d.vertices(nicho)
+    n=al.size(vertices)
+    for i in range(n):
+        ve=al.get_element(vertices,i)
+        if m.get(visitados,ve) is None:
+            s.push(pila_dfs,(ve,0))
     
-    while not s.is_empty(orden_topologico):
-        ruta_top.append(s.pop(orden_topologico))
-    n=len(ruta_top)
-    dist={}
-    ant={}
-    for i in ruta_top:
-        dist[i]=1
-        ant[i]=None
-    mejor=None
-    
-    for j in ruta_top:
-        for k in G.adjacent(nicho,j):
-            if dist[j]+1>dist.get(k,0):
-                dist[k]=dist[j]+1
-                ant[k]=j
-        if mejor is None or dist[k]>dist[mejor]:
-                    mejor=k
-                    
-    if mejor is None or dist[mejor] < 2:
+    while not s.is_empty(pila_dfs):
+        nodo,est=s.pop(pila_dfs)
+        if est==0:
+            if m.get(visitados,nodo) is None:
+                m.put(visitados,nodo,{"marked":True,"edge_from":None})
+                s.push(pila_dfs,(nodo,1))
+                adyacentes=d.adjacent(nicho,nodo)
+                if adyacentes is not None:
+                    for j in range(al.size(adyacentes)-1,-1,-1):
+                        vecino=al.get_element(adyacentes,j)
+                        if m.get(visitados,vecino) is None:
+                            s.push(pila_dfs,(vecino,0))
+        else:
+            s.push(pila_top,nodo)
+    orden_top=[]
+    while not s.is_empty(pila_top):
+        orden_top.append(s.pop(pila_top))
+    if len (orden_top)==0:
         return None
-    path=[]
-    actual=mejor
     
+    dist=m.new_map(d.order(nicho),7)
+    ant=m.new_map(d.order(nicho),7)
+    for v in orden_top:
+        m.put(dist,v,1)
+        m.put(ant,v,None)
+    mejor_fin=None
+    mejor_fin
+    
+    for u in orden_top:
+        du=m.get(dist,u)
+        adyacentes=d.adjacent(nicho,u)
+        if adyacentes is not None:
+            for j in range(al.size(adyacentes)):
+                v=al.get_element(adyacentes,j)
+                dv=m.get(dist,v)
+                if dv is None:
+                    dv=1
+                    m.put(dist,v,dv)
+                    m.put(ant,v,None)
+                if du+2>dv:
+                    m.put(dist,v,du+1)
+                    m.put(ant,v,u)
+        du_act=m.get(dist,u)
+        if du_act>mejor_long:
+            mejor_long=du_act
+            mejor_fin=u
+    
+    if mejor_fin is None or mejor_long<2:
+        return None
+    camino_rev=[]
+    actual=mejor_fin
     while actual is not None:
-        path.append(actual)
-        actual=ant[actual]
-    path.reverse()
-    return path
-
-
+        camino_rev.append(actual)
+        actual=m.get(ant,actual)
+    
+    camino=[]
+    for i in range(len(camino_rev)-1,-1,-1):
+        camino.append(camino_rev[i])
+    
+    tot_puntos=len(camino)
+    
+    individuos=set()
+    for v_id in camino:
+        info_v=d.get_vertex_information(nicho,v_id)
+        lista_grullas=info_v["grullas"]
+        for k in range(al.size(lista_grullas)):
+            individuos.add(al.get_element(lista_grullas,k))
+    tot_individuos=len(individuos)
+    primeros=[]
+    ultimos=[]
+    
+    if tot_puntos<5:
+        limite=tot_puntos
+    else:
+        limite=5
+    for i in range(limite):
+        v_id=camino[i]
+        info_v=d.get_vertex_information(nicho,v_id)
+        lat=info_v["location"][0]
+        long=info_v["location"][1]
+        datos={"Identificador único":info_v["event_id"],
+               "Posición (lat, lon)":(round(lat,5),round(long,5)),
+               "Fecha de creación":info_v["timestamp"],
+               "Grullas (Tags)":info_v["grullas"]["elements"],
+               "Conteo de eventos":info_v["conteo"]}
+        primeros.append(datos)
+    for i in range(tot_puntos-limite,tot_puntos):
+        v_id=camino[i]
+        info_v=d.get_vertex_information(nicho,v_id)
+        lat=info_v["location"][0]
+        long=info_v["location"][1]
+        datos={"Identificador único":info_v["event_id"],
+               "Posición (lat, lon)":(round(lat,5),round(long,5)),
+               "Fecha de creación":info_v["timestamp"],
+               "Grullas (Tags)":info_v["grullas"]["elements"],
+               "Conteo de eventos":info_v["conteo"]}
+        ultimos.append(datos)
+    return tot_puntos,tot_individuos,primeros,ultimos
 def req_4(catalog):
     """
     Retorna el resultado del requerimiento 4

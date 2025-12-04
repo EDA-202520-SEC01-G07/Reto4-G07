@@ -35,7 +35,7 @@ def add_last(array_list,element):
     return array_list
 
 def size(array_list):
-    return array_list["size"] 
+    return array_list["size"]
 
 def first_element(array_list):
     if array_list["size"]>0:
