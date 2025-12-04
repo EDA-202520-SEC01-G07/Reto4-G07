@@ -123,11 +123,36 @@ def print_req_2(control):
 
 
 def print_req_3(control):
-    """
-        Función que imprime la solución del Requerimiento 3 en consola
-    """
-    # TODO: Imprimir el resultado del requerimiento 3
-    pass
+    if control is None:
+        print("Primero debe cargar la información (opción 0).\n")
+        return
+    
+    resultado = lg.req_3(control)
+
+    if resultado is None:
+        print("No se reconoce una ruta migratoria viable dentro del nicho biológico.\n")
+        return
+
+    total_puntos, total_individuos, primeros, ultimos = resultado
+
+    print("==================")
+    print("REQUERIMIENTO 3: Ruta migratoria dentro del nicho biológico")
+    print("==================")
+    print(f"Total de puntos migratorios en la ruta: {total_puntos}")
+    print(f"Total de individuos (grullas) que usan la ruta: {total_individuos}")
+    print("==================\n")
+
+    if len(primeros) > 0:
+        print("--- Primeros 5 puntos de la ruta ---")
+        print(tb.tabulate(primeros, headers="keys", tablefmt="fancy_grid"))
+        print()
+
+    if len(ultimos) > 0:
+        print("--- Últimos 5 puntos de la ruta ---")
+        print(tb.tabulate(ultimos, headers="keys", tablefmt="fancy_grid"))
+        print()
+
+
 
 
 def print_req_4(control):

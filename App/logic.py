@@ -12,6 +12,8 @@ from DataStructures.Graph import dijkstra as djk
 from DataStructures.Priority_queue import priority_queue as pqe
 from DataStructures.Stack import stack as s
 from DataStructures.Graph import bfs as bfs
+from DataStructures.Graph import dfo_structure as dfo
+
 
 def new_logic():
     """
@@ -384,10 +386,116 @@ def req_3(catalog):
     Retorna el resultado del requerimiento 3
     """
     # TODO: Modificar el requerimiento 3
-    pass
-
-
-def req_4(catalog, p_origen):
+    nicho=catalog["grafo_migraciones"]
+    visitados=m.new_map(d.order(nicho), 7)
+    pila_dfs=s.new_stack()
+    pila_top=s.new_stack()
+    vertices=d.vertices(nicho)
+    n=al.size(vertices)
+    for i in range(n):
+        ve=al.get_element(vertices,i)
+        if m.get(visitados,ve) is None:
+            s.push(pila_dfs,(ve,0))
+    
+    while not s.is_empty(pila_dfs):
+        nodo,est=s.pop(pila_dfs)
+        if est==0:
+            if m.get(visitados,nodo) is None:
+                m.put(visitados,nodo,{"marked":True,"edge_from":None})
+                s.push(pila_dfs,(nodo,1))
+                adyacentes=d.adjacent(nicho,nodo)
+                if adyacentes is not None:
+                    for j in range(al.size(adyacentes)-1,-1,-1):
+                        vecino=al.get_element(adyacentes,j)
+                        if m.get(visitados,vecino) is None:
+                            s.push(pila_dfs,(vecino,0))
+        else:
+            s.push(pila_top,nodo)
+    orden_top=[]
+    while not s.is_empty(pila_top):
+        orden_top.append(s.pop(pila_top))
+    if len (orden_top)==0:
+        return None
+    
+    dist=m.new_map(d.order(nicho),7)
+    ant=m.new_map(d.order(nicho),7)
+    for v in orden_top:
+        m.put(dist,v,1)
+        m.put(ant,v,None)
+    mejor_fin=None
+    mejor_fin
+    
+    for u in orden_top:
+        du=m.get(dist,u)
+        adyacentes=d.adjacent(nicho,u)
+        if adyacentes is not None:
+            for j in range(al.size(adyacentes)):
+                v=al.get_element(adyacentes,j)
+                dv=m.get(dist,v)
+                if dv is None:
+                    dv=1
+                    m.put(dist,v,dv)
+                    m.put(ant,v,None)
+                if du+2>dv:
+                    m.put(dist,v,du+1)
+                    m.put(ant,v,u)
+        du_act=m.get(dist,u)
+        if du_act>mejor_long:
+            mejor_long=du_act
+            mejor_fin=u
+    
+    if mejor_fin is None or mejor_long<2:
+        return None
+    camino_rev=[]
+    actual=mejor_fin
+    while actual is not None:
+        camino_rev.append(actual)
+        actual=m.get(ant,actual)
+    
+    camino=[]
+    for i in range(len(camino_rev)-1,-1,-1):
+        camino.append(camino_rev[i])
+    
+    tot_puntos=len(camino)
+    
+    individuos=set()
+    for v_id in camino:
+        info_v=d.get_vertex_information(nicho,v_id)
+        lista_grullas=info_v["grullas"]
+        for k in range(al.size(lista_grullas)):
+            individuos.add(al.get_element(lista_grullas,k))
+    tot_individuos=len(individuos)
+    primeros=[]
+    ultimos=[]
+    
+    if tot_puntos<5:
+        limite=tot_puntos
+    else:
+        limite=5
+    for i in range(limite):
+        v_id=camino[i]
+        info_v=d.get_vertex_information(nicho,v_id)
+        lat=info_v["location"][0]
+        long=info_v["location"][1]
+        datos={"Identificador único":info_v["event_id"],
+               "Posición (lat, lon)":(round(lat,5),round(long,5)),
+               "Fecha de creación":info_v["timestamp"],
+               "Grullas (Tags)":info_v["grullas"]["elements"],
+               "Conteo de eventos":info_v["conteo"]}
+        primeros.append(datos)
+    for i in range(tot_puntos-limite,tot_puntos):
+        v_id=camino[i]
+        info_v=d.get_vertex_information(nicho,v_id)
+        lat=info_v["location"][0]
+        long=info_v["location"][1]
+        datos={"Identificador único":info_v["event_id"],
+               "Posición (lat, lon)":(round(lat,5),round(long,5)),
+               "Fecha de creación":info_v["timestamp"],
+               "Grullas (Tags)":info_v["grullas"]["elements"],
+               "Conteo de eventos":info_v["conteo"]}
+        ultimos.append(datos)
+    return tot_puntos,tot_individuos,primeros,ultimos
+def req_4(catalog):
     """
     Retorna el resultado del requerimiento 4
     """
