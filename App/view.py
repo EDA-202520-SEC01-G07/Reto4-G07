@@ -28,7 +28,6 @@ def load_data(control):
     Carga los datos
     """
     #TODO: Realizar la carga de datos
-    control = new_logic()
     file = input('Diga el archivo que quiere evaluar (small, large, 30pct, 80pct)\n').strip().lower()
     file = "data/1000_cranes_mongolia_"+file+".csv"
     tiempo, grullas, llaves = lg.load_data(control, file)
@@ -57,49 +56,55 @@ def print_data(control, id):
     pass
 
 def print_req_1(control):
-    """
-        Función que imprime la solución del Requerimiento 1 en consola
-    """
-    print("\n========== REQUERIMIENTO 1 ==========\n")
-
-    lat_o = float(input("Latitud del punto de origen: "))
-    lon_o = float(input("Longitud del punto de origen: "))
-    lat_d = float(input("Latitud del punto de destino: "))
-    lon_d = float(input("Longitud del punto de destino: "))
-    grulla_id = int(input("Tag-local-identifier de la grulla: "))
-
-    print("\nProcesando...\n")
-
-    respuesta = lg.req_1(control, lat_o, lon_o, lat_d, lon_d, grulla_id)
-
-    # Verificación de errores
-    if "error" in respuesta:
-        print( respuesta["error"] + "\n")
+    print("===========REQUERIMIENTO1===========")
+    lat_o = float(input("Ingrese la latitud del punto de origen: ").strip())
+    lon_o = float(input("Ingrese la longitud del punto de origen: ").strip())
+    lat_d = float(input("Ingrese la latitud del punto de destino: ").strip())
+    lon_d = float(input("Ingrese la longitud del punto de destino: ").strip())
+    grulla_id = int(input("Ingrese el ID del individuo (grulla): ").strip())
+    result = lg.req_1(control, lat_o, lon_o, lat_d, lon_d, grulla_id)
+    if "error" in result:
+        print("Error:", result["error"])
         return
-
-    # Información básica
-    print(" Nodo origen más cercano:", respuesta["origen_id"])
-    print(" Nodo destino más cercano:", respuesta["destino_id"])
-    print(" Número total de nodos en el camino:", respuesta["total_nodos"])
-    print(" Distancia total recorrida:", round(respuesta["total_dist"], 2), "km\n")
-
-    # Construcción de tabla para el camino
-    tabla = []
-    for nodo in respuesta["camino"]:
-        tabla.append({
-            "ID Nodo": nodo["id"],
-            "Lat": round(nodo["lat"], 5),
-            "Lon": round(nodo["lon"], 5),
-            "#Eventos": nodo["conteo"],
-            "Primeros 3": nodo["primeros3"],
-            "Últimos 3": nodo["ultimos3"],
-            "Dist. al sig.": round(nodo["dist_next"], 2) if nodo["dist_next"] else "-"
-        })
-
-    print("===== CAMINO ENCONTRADO =====")
-    print(tb.tabulate(tabla, headers="keys", tablefmt="fancy_grid"))
-    print()
-
+    print("NodoOrigen:", result["origen_id"])
+    print("NodoDestino:", result["destino_id"])
+    print("PrimerNodoConIndividuo:", result["mensaje_first_node"])
+    print("DistanciaTotal:", result["total_dist"])
+    print("TotalNodos:", result["total_nodos"])
+    print("Primeros5:")
+    primeros = result["primeros5"]
+    i = 0
+    while i < len(primeros):
+        nodo = primeros[i]
+        print("ID:", nodo["id"])
+        print("Lat:", nodo["lat"])
+        print("Lon:", nodo["lon"])
+        print("Conteo:", nodo["conteo"])
+        print("Primeros3:", nodo["primeros3"])
+        print("Ultimos3:", nodo["ultimos3"])
+        dist = nodo["dist_next"]
+        if dist is None:
+            print("DistNext:NA")
+        else:
+            print("DistNext:", dist)
+        i = i + 1
+    print("Ultimos5:")
+    ultimos = result["ultimos5"]
+    j = 0
+    while j < len(ultimos):
+        nodo = ultimos[j]
+        print("ID:", nodo["id"])
+        print("Lat:", nodo["lat"])
+        print("Lon:", nodo["lon"])
+        print("Conteo:", nodo["conteo"])
+        print("Primeros3:", nodo["primeros3"])
+        print("Ultimos3:", nodo["ultimos3"])
+        dist = nodo["dist_next"]
+        if dist is None:
+            print("DistNext:NA")
+        else:
+            print("DistNext:", dist)
+        j = j + 1
 
 
 def print_req_2(control):
@@ -155,43 +160,50 @@ def print_req_4(control):
     pass
 
 
-def print_req_5(result):
+def print_req_5(control):
+    print("===========REQUERIMIENTO 5===========")
+    lat_o=float(input("Ingrese latitud origen: ").strip())
+    lon_o=float(input("Ingrese longitud origen: ").strip())
+    lat_d=float(input("Ingrese latitud destino: ").strip())
+    lon_d=float(input("Ingrese longitud destino: ").strip())
+    tipo=input("Grafo (desplazamiento/hidrico): ").strip().lower()
+    if tipo!="hidrico": tipo="desplazamiento"
+    result=lg.req_5(control,lat_o,lon_o,lat_d,lon_d, tipo)
     if "error" in result:
-        print("\nError:", result["error"])
-        return
+        print("Error:",result["error"]);return
+    print("Origen:",result["origen_id"])
+    print("Destino:",result["destino_id"])
+    print("CostoTotal:",result["total_cost"])
+    print("TotalNodos:",result["total_nodos"])
+    print("TotalSegmentos:",result["total_segmentos"])
+    print("Primeros5:")
+    i=0
+    while i < min(5, len(result["camino"])):
+        n=result["camino"][i]
+        print("ID:",n["id"])
+        print("Lat:",n["lat"])
+        print("Lon:",n["lon"])
+        print("Conteo:",n["conteo"])
+        print("Primeros3:",n["primeros3"])
+        print("Ultimos3:",n["ultimos3"])
+        print("DistNext:",("NA" if n["dist_next"] is None else n["dist_next"]))
+        i=i+1
+    print("Ultimos5:")
+    total=len(result["camino"])
+    start= total - min(5,total)
+    j=start
+    while j< total:
+        n=result["camino"][j]
+        print("ID:",n["id"])
+        print("Lat:",n["lat"])
+        print("Lon:",n["lon"])
+        print("Conteo:",n["conteo"])
+        print("Primeros3:",n["primeros3"])
+        print("Ultimos3:",n["ultimos3"])
+        print("DistNext:",("NA" if n["dist_next"] is None else n["dist_next"]))
+        j=j+1
+    print("FinRequerimiento5")
 
-    print("\n==============================================")
-    print("                REQ 5  RUTA EFICIENTE")
-    print("==============================================\n")
-
-    print(f"Nodo origen más cercano: {result['origen_id']}")
-    print(f"Nodo destino más cercano: {result['destino_id']}")
-    print(f"Costo total del camino: {result['total_cost']}")
-    print(f"Total nodos en la ruta: {result['total_nodos']}")
-    print(f"Total segmentos: {result['total_segmentos']}\n")
-
-    print("--------------  CAMINO DETALLADO  --------------\n")
-
-    camino = result["camino"]
-
-    for i in range(result["total_nodos"]):
-        nodo = camino[i]
-
-        print(f"Nodo {i+1}:")
-        print(f"   ID: {nodo['id']}")
-        print(f"   Ubicación: ({nodo['lat']}, {nodo['lon']})")
-        print(f"   Conteo de grullas: {nodo['conteo']}")
-        print(f"   Primeros 3 tags: {nodo['primeros3']}")
-        print(f"   Últimos 3 tags: {nodo['ultimos3']}")
-
-        if nodo["dist_next"] is None:
-            print("   Distancia al siguiente nodo: N/A (último nodo)")
-        else:
-            print(f"   Distancia al siguiente nodo: {nodo['dist_next']} km")
-
-        print("-" * 50)
-
-    print("\nFin del reporte del requerimiento 5.\n")
 
 
 
