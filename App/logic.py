@@ -19,12 +19,12 @@ def new_logic():
     #TODO: Llama a las funciónes de creación de las estructuras de datos
     catalog = {
         "eventos": None,
-        "grafo_desplazamiento": None,
+        "grafo_migraciones": None,
         "grafo_hidrico": None
     }
     catalog["eventos"] = al.new_list()
-    catalog["grafo_desplazamiento"] = d.new_graph(7000)
-    catalog["grafo_hidrico"] = d.new_graph(7000)
+    catalog["grafo_migraciones"] = d.new_graph(6500)
+    catalog["grafo_hidrico"] = d.new_graph(6500)
     return catalog
 
 # Funciones para la carga de datos
@@ -52,20 +52,20 @@ def load_data(catalog, filename):
     al.merge_sort(catalog["eventos"], al.sort_crit_reto4)
     
     # 2. Construcción vértices
-    g_des = catalog["grafo_desplazamiento"]
+    g_mig = catalog["grafo_migraciones"]
     g_hid = catalog["grafo_hidrico"]
     llaves = []
     grulla_0 = al.first_element(catalog["eventos"]) #Me da la primera grulla
     primer_vert = nuevo_vertice(grulla_0)
     llaves.append(grulla_0["id"])
-    d.insert_vertex(g_des, grulla_0["id"], primer_vert)
+    d.insert_vertex(g_mig, grulla_0["id"], primer_vert)
     d.insert_vertex(g_hid, grulla_0["id"], primer_vert)
     
     for i in range(1, al.size(catalog["eventos"])):
         grulla = al.get_element(catalog["eventos"], i)
         agregado = False
         for key in llaves:
-            nodo = d.get_vertex_information(g_des, key)
+            nodo = d.get_vertex_information(g_mig, key)
             distancia = h.haversine((grulla["latitud"], grulla["longitud"]), nodo["location"])
             diferencia = abs(grulla["time_dt"]-nodo["time_dt"])
             horas = diferencia.total_seconds()/3600
@@ -82,46 +82,50 @@ def load_data(catalog, filename):
                 break
         if not agregado:
             vertice = nuevo_vertice(grulla) #Se crea un nuevo vértice si no está a 3 Km o en el rango de 3 horas
-            d.insert_vertex(g_des, grulla["id"], vertice)
+            d.insert_vertex(g_mig, grulla["id"], vertice)
             d.insert_vertex(g_hid, grulla["id"], vertice)
             llaves.append(grulla["id"])
             grullas_ident[grulla["tag-local-identifier"]].append(grulla["id"])
     
-    """"
+    
     # 3. CREAR ARCOS DE DESPLAZAMIENTO
-    migracion = catalog["grafo_desplazamiento"]
-    vertices = catalog["vertices"]
     arcos = {}
     for grulla_id in grullas_ident:
         ruta = grullas_ident[grulla_id] # lista con los nodos en orden temporal
         # Debe haber al menos dos nodos para crear un arco
-        if len(ruta) >= 2:
-            #¿Qué hago acá?
-            for i in range(1, len(ruta)):
-                vert_A = m.get(vertices, ruta[i-1])
-                vert_B = m.get(vertices, ruta[i])
-                if vert_A == vert_B:
-                    continue
-                distancia = h.haversine((m.get(vert_A,"latitud"),m.get(vert_A,"longitud")),(m.get(vert_B,"latitud"),m.get(vert_B,"longitud")))
-                diferencia = abs(m.get(vert_B, "time_dt") - m.get(vert_A, "time_dt"))
-                horas = diferencia.total_seconds() / 3600
-                if arcos[(vert_A["event_id"], vert_B["event_id"])] not in arcos:
-                    arcos[vert_A["event_id"], vert_B["event_id"]] = [distancia, 1]
-                else:
-                    arcos[vert_A["event_id"], vert_B["event_id"]] = [arcos[vert_A["event_id"], vert_B["event_id"]][0]+diferencia, arcos[vert_A["event_id"], vert_B["event_id"]][0]+1]
-    for i in arcos:
-        A = arcos[i][0]
-        print(A)
+        if len(ruta) < 2:
+            continue
+        
+        for i in range(1, len(ruta)):
+            vert_A_id = ruta[i-1]
+            vert_B_id = ruta[i]
+            if vert_A_id == vert_B_id:
+                continue
+            vA = d.get_vertex_information(g_mig, vert_A_id)["map_eventos"]
+            vB = d.get_vertex_information(g_mig, vert_B_id)["map_eventos"]
+            llaves_vA = m.key_set(vA)
+            llaves_vB = m.key_set(vB)
+            suma = 0
+            cont = 0
+            
+            for j in range(al.size(llaves_vA)):
+                eventosA = m.get(vA, al.get_element(llaves_vA, j))
+                for k in range(al.size(llaves_vB)):
+                    eventosB = m.get(vB, al.get_element(llaves_vB, k))
+                    dist = h.haversine((eventosA["latitud"],eventosA["longitud"]),(eventosB["latitud"],eventosB["longitud"]))
+                    suma += dist
+                    cont += 1
+            if (vert_A_id, vert_B_id) not in arcos:
+                arcos[(vert_A_id, vert_B_id)] = [suma, cont]
+            else:
+                arcos[(vert_A_id, vert_B_id)][0] += suma
+                arcos[(vert_A_id, vert_B_id)][1] += cont
+    
+    for (nodoA, nodoB) in arcos:
+        promedio = round(arcos[(nodoA, nodoB)][0]/arcos[(nodoA, nodoB)][1], 2)
+        d.add_edge(g_mig, nodoA, nodoB, promedio)
 
-        prom= round(arcos[i][0]/arcos[i][1],2)
-        if not d.contains_vertex(migracion, evento_0["id"]):
-                        d.insert_vertex(grafo_desplazamiento, evento_0["id"], None)
-                    if not d.contains_vertex(grafo_desplazamiento, evento_1["id"]):
-                        d.insert_vertex(grafo_desplazamiento, evento_1["id"], None)
-                    # Agregar arco
-                    d.add_edge(grafo_desplazamiento, evento_0["id"], evento_1["id"], velocidad)
-    catalog["grafo_desplazamiento"] = grafo_desplazamiento
-    # 4. CREAR ARCOS DE PROXIMIDAD HÍDRICA
+    """"    # 4. CREAR ARCOS DE PROXIMIDAD HÍDRICA
     grafo_hidrico = catalog["grafo_hidrico"]
     for i in range(len(llaves)):
         nodo_i = m.get(nodos, llaves[i])
@@ -197,9 +201,10 @@ def nuevo_vertice(grulla_0):
     return mapa
 
 def presentacion_datos(catalog, llaves):
-    vertices = catalog["grafo_desplazamiento"]
+    vertices = catalog["grafo_migraciones"]
     primeros = []
     ultimos = []
+
     for i in range(5):
         elem = d.get_vertex_information(vertices, llaves[i])
         lat = elem["location"][0]
